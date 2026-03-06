@@ -26,8 +26,9 @@ jobs:
 
       - name: Detect bump type and calculate version
         id: bump
+        env:
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
         run: |
-          COMMIT_MSG="${{ github.event.head_commit.message }}"
           CURRENT_VERSION=$(node -e "console.log(require('./package.json').version)")
 
           IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
