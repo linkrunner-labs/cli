@@ -2,7 +2,7 @@
 
 SDK integration, validation, and debugging tool for Linkrunner.
 
-[![npm version](https://img.shields.io/npm/v/linkrunner-cli)](https://www.npmjs.com/package/linkrunner-cli)
+[![npm version](https://img.shields.io/npm/v/@linkrunner/cli)](https://www.npmjs.com/package/@linkrunner/cli)
 [![GitHub release](https://img.shields.io/github/v/release/linkrunner-labs/cli)](https://github.com/linkrunner-labs/cli/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
@@ -13,10 +13,10 @@ SDK integration, validation, and debugging tool for Linkrunner.
 curl -fsSL https://raw.githubusercontent.com/linkrunner-labs/cli/main/install.sh | sh
 
 # Via npm
-npm install -g linkrunner-cli
+npm install -g @linkrunner/cli
 
 # Via bun
-bun install -g linkrunner-cli
+bun install -g @linkrunner/cli
 ```
 
 ## Quick Start

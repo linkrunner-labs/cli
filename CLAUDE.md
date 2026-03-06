@@ -49,5 +49,5 @@ Flutter, React Native, Expo, iOS Native, Android Native, Capacitor, Web
 
 ## npm Package
 
-- Name: `linkrunner-cli` (public, unscoped)
+- Name: `@linkrunner/cli` (public, scoped)
 - Binary command: `lr`
