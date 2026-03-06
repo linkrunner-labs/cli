@@ -2,17 +2,17 @@ import { existsSync, readFileSync, readdirSync, statSync } from "fs";
 import { join, extname } from "path";
 import type { ValidationResult } from "../types/index.js";
 import { DOC_LINKS } from "../config/constants.js";
+import { pass, warn, error, fileExists, readJsonSafe } from "./helpers.js";
 
-function readJsonSafe(filePath: string): Record<string, unknown> | null {
-  try {
-    const content = readFileSync(filePath, "utf-8");
-    return JSON.parse(content) as Record<string, unknown>;
-  } catch {
-    return null;
-  }
-}
-
-const SOURCE_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx", ".html", ".vue", ".svelte"]);
+const SOURCE_EXTENSIONS = new Set([
+  ".ts",
+  ".tsx",
+  ".js",
+  ".jsx",
+  ".html",
+  ".vue",
+  ".svelte",
+]);
 const INIT_PATTERNS = [
   /LinkrunnerSDK\.init\s*\(/,
   /useLinkrunner\s*\(/,
@@ -32,7 +32,12 @@ function scanSourceFiles(dir: string, maxDepth: number = 5): boolean {
   }
 
   for (const entry of entries) {
-    if (entry === "node_modules" || entry === ".git" || entry === "dist" || entry === "build") {
+    if (
+      entry === "node_modules" ||
+      entry === ".git" ||
+      entry === "dist" ||
+      entry === "build"
+    ) {
       continue;
     }
 
@@ -65,33 +70,37 @@ export function validateWeb(projectRoot: string): ValidationResult[] {
   const results: ValidationResult[] = [];
 
   const packageJsonPath = join(projectRoot, "package.json");
-  const pkg = existsSync(packageJsonPath) ? readJsonSafe(packageJsonPath) : null;
+  const pkg = fileExists(packageJsonPath)
+    ? readJsonSafe(packageJsonPath)
+    : null;
   const deps = pkg?.dependencies as Record<string, string> | undefined;
   const devDeps = pkg?.devDependencies as Record<string, string> | undefined;
 
   // Check 1: @linkrunner/web-sdk in package.json
-  const webSdkVersion = deps?.["@linkrunner/web-sdk"] ?? devDeps?.["@linkrunner/web-sdk"];
+  const webSdkVersion =
+    deps?.["@linkrunner/web-sdk"] ?? devDeps?.["@linkrunner/web-sdk"];
 
   if (!webSdkVersion) {
-    results.push({
-      id: "web-sdk-installed",
-      name: "Linkrunner Web SDK installed",
-      status: "error",
-      severity: "error",
-      message: "@linkrunner/web-sdk package not found in package.json",
-      fix: "Run: npm install @linkrunner/web-sdk",
-      autoFixable: true,
-      docsUrl: DOC_LINKS.web,
-    });
+    results.push(
+      error(
+        "web-sdk-installed",
+        "Linkrunner Web SDK installed",
+        "@linkrunner/web-sdk package not found in package.json",
+        {
+          fix: "Run: npm install @linkrunner/web-sdk",
+          autoFixable: true,
+          docsUrl: DOC_LINKS.web,
+        }
+      )
+    );
   } else {
-    results.push({
-      id: "web-sdk-installed",
-      name: "Linkrunner Web SDK installed",
-      status: "pass",
-      severity: "error",
-      message: "@linkrunner/web-sdk package found in package.json",
-      autoFixable: false,
-    });
+    results.push(
+      pass(
+        "web-sdk-installed",
+        "Linkrunner Web SDK installed",
+        "@linkrunner/web-sdk package found in package.json"
+      )
+    );
   }
 
   // Check 2: SDK init call found in source
@@ -100,8 +109,8 @@ export function validateWeb(projectRoot: string): ValidationResult[] {
   const pagesDir = join(projectRoot, "pages");
   const publicDir = join(projectRoot, "public");
 
-  const dirsToScan = [srcDir, appDir, pagesDir, publicDir, projectRoot].filter((d) =>
-    existsSync(d)
+  const dirsToScan = [srcDir, appDir, pagesDir, publicDir, projectRoot].filter(
+    (d) => existsSync(d)
   );
 
   let initFound = false;
@@ -115,25 +124,25 @@ export function validateWeb(projectRoot: string): ValidationResult[] {
   }
 
   if (!initFound) {
-    results.push({
-      id: "web-sdk-init",
-      name: "Linkrunner Web SDK initialized",
-      status: "warn",
-      severity: "warn",
-      message: "Could not find SDK initialization call in source files",
-      fix: "Initialize the SDK with LinkrunnerSDK.init() or useLinkrunner(). See docs for setup instructions.",
-      autoFixable: false,
-      docsUrl: DOC_LINKS.web,
-    });
+    results.push(
+      warn(
+        "web-sdk-init",
+        "Linkrunner Web SDK initialized",
+        "Could not find SDK initialization call in source files",
+        {
+          fix: "Initialize the SDK with LinkrunnerSDK.init() or useLinkrunner(). See docs for setup instructions.",
+          docsUrl: DOC_LINKS.web,
+        }
+      )
+    );
   } else {
-    results.push({
-      id: "web-sdk-init",
-      name: "Linkrunner Web SDK initialized",
-      status: "pass",
-      severity: "warn",
-      message: "SDK initialization call found in source files",
-      autoFixable: false,
-    });
+    results.push(
+      pass(
+        "web-sdk-init",
+        "Linkrunner Web SDK initialized",
+        "SDK initialization call found in source files"
+      )
+    );
   }
 
   return results;

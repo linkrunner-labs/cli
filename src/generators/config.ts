@@ -9,7 +9,9 @@ interface GenerateConfigParams {
   sdkCredentials: SDKCredential[];
 }
 
-function derivePlatforms(projectType: ProjectType): Array<"android" | "ios" | "web"> {
+function derivePlatforms(
+  projectType: ProjectType
+): Array<"android" | "ios" | "web"> {
   switch (projectType) {
     case "flutter":
     case "react-native":
@@ -32,8 +34,15 @@ function deriveDeepLinkDomain(project: Project): string {
   return "";
 }
 
-export function generateProjectConfig(params: GenerateConfigParams): ProjectConfig {
-  const { project, projectToken, projectType, sdkCredentials: _sdkCredentials } = params;
+export function generateProjectConfig(
+  params: GenerateConfigParams
+): ProjectConfig {
+  const {
+    project,
+    projectToken,
+    projectType,
+    sdkCredentials: _sdkCredentials,
+  } = params;
   const platforms = derivePlatforms(projectType);
   const deepLinkDomain = deriveDeepLinkDomain(project);
 

@@ -1,6 +1,11 @@
 import { existsSync, readFileSync } from "fs";
 import { basename, dirname, join, resolve } from "path";
-import type { DetectedProject, ProjectPaths, ProjectType } from "../types/index.js";
+import type {
+  DetectedProject,
+  ProjectPaths,
+  ProjectType,
+} from "../types/index.js";
+import { debug } from "../utils/debug.js";
 
 const MAX_SEARCH_DEPTH = 10;
 
@@ -8,7 +13,9 @@ function findFileUpward(startDir: string, filename: string): string | null {
   let current = resolve(startDir);
   for (let i = 0; i < MAX_SEARCH_DEPTH; i++) {
     const candidate = join(current, filename);
+    debug(`checking ${candidate}`);
     if (existsSync(candidate)) {
+      debug(`found ${candidate}`);
       return candidate;
     }
     const parent = dirname(current);
@@ -35,7 +42,9 @@ function findProjectRoot(startDir: string): string {
 }
 
 function resolveAndroidPaths(root: string): Partial<ProjectPaths> {
-  const androidDir = existsSync(join(root, "android")) ? join(root, "android") : root;
+  const androidDir = existsSync(join(root, "android"))
+    ? join(root, "android")
+    : root;
   const paths: Partial<ProjectPaths> = {};
 
   const manifestCandidates = [
@@ -122,7 +131,14 @@ function resolveIosPaths(root: string): Partial<ProjectPaths> {
 
   // Find entitlements
   try {
-    const entries = Bun.spawnSync(["find", iosDir, "-name", "*.entitlements", "-maxdepth", "3"])
+    const entries = Bun.spawnSync([
+      "find",
+      iosDir,
+      "-name",
+      "*.entitlements",
+      "-maxdepth",
+      "3",
+    ])
       .stdout.toString()
       .split("\n")
       .filter(Boolean);
@@ -153,7 +169,10 @@ function readFileSafe(filePath: string): string | null {
   }
 }
 
-function getSdkVersion(type: ProjectType, paths: ProjectPaths): string | undefined {
+function getSdkVersion(
+  type: ProjectType,
+  paths: ProjectPaths
+): string | undefined {
   switch (type) {
     case "flutter": {
       if (!paths.pubspec) return undefined;
@@ -175,7 +194,9 @@ function getSdkVersion(type: ProjectType, paths: ProjectPaths): string | undefin
       if (!paths.podfile) return undefined;
       const content = readFileSafe(paths.podfile);
       if (!content) return undefined;
-      const match = content.match(/pod\s+['"]linkrunner-ios['"],\s*['"]~>\s*([^'"]+)['"]/i);
+      const match = content.match(
+        /pod\s+['"]linkrunner-ios['"],\s*['"]~>\s*([^'"]+)['"]/i
+      );
       return match?.[1];
     }
     case "android": {
@@ -197,7 +218,9 @@ function getSdkVersion(type: ProjectType, paths: ProjectPaths): string | undefin
   }
 }
 
-function detectType(root: string): { type: ProjectType; paths: ProjectPaths } | null {
+function detectType(
+  root: string
+): { type: ProjectType; paths: ProjectPaths } | null {
   const packageJsonPath = join(root, "package.json");
   const pubspecPath = join(root, "pubspec.yaml");
   const hasPackageJson = existsSync(packageJsonPath);
@@ -221,7 +244,8 @@ function detectType(root: string): { type: ProjectType; paths: ProjectPaths } | 
 
       if (existsSync(appJsonPath)) basePaths.appJson = appJsonPath;
       if (existsSync(appConfigPath)) basePaths.appConfig = appConfigPath;
-      else if (existsSync(appConfigTsPath)) basePaths.appConfig = appConfigTsPath;
+      else if (existsSync(appConfigTsPath))
+        basePaths.appConfig = appConfigTsPath;
 
       const hasExpo = !!(deps?.expo || devDeps?.expo);
       if (hasExpo) {
@@ -234,7 +258,9 @@ function detectType(root: string): { type: ProjectType; paths: ProjectPaths } | 
       }
 
       // Check for React Native
-      const hasReactNative = !!(deps?.["react-native"] || devDeps?.["react-native"]);
+      const hasReactNative = !!(
+        deps?.["react-native"] || devDeps?.["react-native"]
+      );
       if (hasReactNative) {
         const iosPaths = resolveIosPaths(root);
         const androidPaths = resolveAndroidPaths(root);
@@ -274,7 +300,9 @@ function detectType(root: string): { type: ProjectType; paths: ProjectPaths } | 
   try {
     const entries = Bun.spawnSync(["ls", root]).stdout.toString().split("\n");
     const hasXcodeproj = entries.some((e) => e.trim().endsWith(".xcodeproj"));
-    const hasXcworkspace = entries.some((e) => e.trim().endsWith(".xcworkspace"));
+    const hasXcworkspace = entries.some((e) =>
+      e.trim().endsWith(".xcworkspace")
+    );
     if (hasXcodeproj || hasXcworkspace) {
       const iosPaths = resolveIosPaths(root);
       return {
@@ -310,12 +338,19 @@ function detectType(root: string): { type: ProjectType; paths: ProjectPaths } | 
 
 export function detectProjectType(cwd?: string): DetectedProject | null {
   const startDir = cwd ?? process.cwd();
+  debug(`detecting project type from ${startDir}`);
   const root = findProjectRoot(startDir);
+  debug(`project root: ${root}`);
   const result = detectType(root);
 
-  if (!result) return null;
+  if (!result) {
+    debug("no project type detected");
+    return null;
+  }
 
+  debug(`detected project type: ${result.type}`);
   const sdkVersion = getSdkVersion(result.type, result.paths);
+  if (sdkVersion) debug(`SDK version: ${sdkVersion}`);
 
   return {
     type: result.type,

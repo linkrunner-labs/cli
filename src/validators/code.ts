@@ -57,16 +57,35 @@ const PATTERNS: Record<ProjectType, SDKPatterns> = {
     trackEvent: [/linkrunner\.trackEvent\s*\(/],
   },
   capacitor: {
-    init: [/linkrunner\.init\s*\(/, /LinkrunnerSDK\.init\s*\(/, /useLinkrunner\s*\(/],
+    init: [
+      /linkrunner\.init\s*\(/,
+      /LinkrunnerSDK\.init\s*\(/,
+      /useLinkrunner\s*\(/,
+    ],
     signup: [/linkrunner\.signup\s*\(/, /LinkrunnerSDK\.signup\s*\(/],
-    setUserData: [/linkrunner\.setUserData\s*\(/, /LinkrunnerSDK\.setUserData\s*\(/],
-    trackEvent: [/linkrunner\.trackEvent\s*\(/, /LinkrunnerSDK\.trackEvent\s*\(/],
+    setUserData: [
+      /linkrunner\.setUserData\s*\(/,
+      /LinkrunnerSDK\.setUserData\s*\(/,
+    ],
+    trackEvent: [
+      /linkrunner\.trackEvent\s*\(/,
+      /LinkrunnerSDK\.trackEvent\s*\(/,
+    ],
   },
   android: {
     init: [/LinkRunner\.getInstance\(\)\.init\s*\(/, /LinkRunner\.init\s*\(/],
-    signup: [/LinkRunner\.getInstance\(\)\.signup\s*\(/, /LinkRunner\.signup\s*\(/],
-    setUserData: [/LinkRunner\.getInstance\(\)\.setUserData\s*\(/, /LinkRunner\.setUserData\s*\(/],
-    trackEvent: [/LinkRunner\.getInstance\(\)\.trackEvent\s*\(/, /LinkRunner\.trackEvent\s*\(/],
+    signup: [
+      /LinkRunner\.getInstance\(\)\.signup\s*\(/,
+      /LinkRunner\.signup\s*\(/,
+    ],
+    setUserData: [
+      /LinkRunner\.getInstance\(\)\.setUserData\s*\(/,
+      /LinkRunner\.setUserData\s*\(/,
+    ],
+    trackEvent: [
+      /LinkRunner\.getInstance\(\)\.trackEvent\s*\(/,
+      /LinkRunner\.trackEvent\s*\(/,
+    ],
   },
   ios: {
     init: [/LinkrunnerSDK\.shared\.initialize\s*\(/],
@@ -84,8 +103,7 @@ const PATTERNS: Record<ProjectType, SDKPatterns> = {
 
 // Detect amount passed as string literal in trackEvent calls
 // Matches patterns like: amount: "...", amount: '...', amount: `...`
-const AMOUNT_STRING_PATTERN =
-  /trackEvent\s*\([^)]*amount\s*[:=]\s*(['"`])/;
+const AMOUNT_STRING_PATTERN = /trackEvent\s*\([^)]*amount\s*[:=]\s*(['"`])/;
 
 interface FileMatch {
   file: string;
@@ -136,7 +154,7 @@ function parseGitignore(rootPath: string): Set<string> {
 function walkFiles(
   dir: string,
   extensions: string[],
-  skipSet: Set<string>,
+  skipSet: Set<string>
 ): string[] {
   const results: string[] = [];
 
@@ -175,10 +193,7 @@ function walkFiles(
 /**
  * Search for regex matches across all source files, returning file + line info.
  */
-function findMatches(
-  files: string[],
-  patterns: RegExp[],
-): FileMatch[] {
+function findMatches(files: string[], patterns: RegExp[]): FileMatch[] {
   const matches: FileMatch[] = [];
 
   for (const file of files) {
@@ -213,7 +228,7 @@ function findMatches(
  */
 function findAmountStringWarnings(
   files: string[],
-  rootPath: string,
+  rootPath: string
 ): ValidationResult[] {
   const results: ValidationResult[] = [];
 
@@ -259,7 +274,7 @@ function formatLocation(match: FileMatch, rootPath: string): string {
  */
 export async function validateCode(
   projectType: ProjectType,
-  rootPath: string,
+  rootPath: string
 ): Promise<ValidationResult[]> {
   const results: ValidationResult[] = [];
   const docsUrl = DOC_LINKS[projectType];
@@ -342,7 +357,8 @@ export async function validateCode(
       name: "SDK signup() call",
       status: "warn",
       severity: "warn",
-      message: "No signup() call found — user attribution will be limited without it",
+      message:
+        "No signup() call found — user attribution will be limited without it",
       fix: "Add a signup() call after user registration or login",
       autoFixable: false,
       docsUrl,
@@ -370,7 +386,8 @@ export async function validateCode(
       name: "SDK setUserData() call",
       status: "warn",
       severity: "warn",
-      message: "No setUserData() call found — user data enrichment is recommended",
+      message:
+        "No setUserData() call found — user data enrichment is recommended",
       fix: "Add a setUserData() call to pass user properties to Linkrunner",
       autoFixable: false,
       docsUrl,

@@ -31,12 +31,12 @@ export async function testCommand(options: TestOptions): Promise<void> {
         JSON.stringify({
           error: "No .linkrunner.json found",
           results: [],
-        }),
+        })
       );
     } else {
       output.error(
         "No .linkrunner.json found",
-        "Run `lr init` to set up your project",
+        "Run `lr init` to set up your project"
       );
     }
     process.exit(1);
@@ -47,7 +47,7 @@ export async function testCommand(options: TestOptions): Promise<void> {
   if (!options.json) {
     console.log(`  ${chalk.blue("Environment:")} ${env}`);
     console.log(
-      `  ${chalk.blue("Project:")} ${config.project_name} (ID: ${config.project_id})`,
+      `  ${chalk.blue("Project:")} ${config.project_name} (ID: ${config.project_id})`
     );
     console.log();
   }
@@ -57,7 +57,9 @@ export async function testCommand(options: TestOptions): Promise<void> {
     output.header("Token Verification");
   }
 
-  const tokenSpinner = options.json ? null : output.spinner("Verifying project token...");
+  const tokenSpinner = options.json
+    ? null
+    : output.spinner("Verifying project token...");
   const startTime = Date.now();
 
   try {
@@ -162,7 +164,7 @@ export async function testCommand(options: TestOptions): Promise<void> {
       "Domain reachability",
       `Domain ${domain} is reachable`,
       `Domain ${domain} is not reachable`,
-      "Verify your deep link domain is correctly configured",
+      "Verify your deep link domain is correctly configured"
     );
     allResults.push(domainResult);
     if (!options.json) {
@@ -177,7 +179,7 @@ export async function testCommand(options: TestOptions): Promise<void> {
       "Android assetlinks.json",
       "/.well-known/assetlinks.json returns valid response",
       "/.well-known/assetlinks.json not found",
-      "Upload assetlinks.json to your deep link domain for Android App Links",
+      "Upload assetlinks.json to your deep link domain for Android App Links"
     );
     allResults.push(assetlinksResult);
     if (!options.json) {
@@ -192,7 +194,7 @@ export async function testCommand(options: TestOptions): Promise<void> {
       "iOS apple-app-site-association",
       "/.well-known/apple-app-site-association returns valid response",
       "/.well-known/apple-app-site-association not found",
-      "Upload AASA file to your deep link domain for iOS Universal Links",
+      "Upload AASA file to your deep link domain for iOS Universal Links"
     );
     allResults.push(aasaResult);
     if (!options.json) {
@@ -228,7 +230,7 @@ async function checkUrl(
   name: string,
   passMessage: string,
   failMessage: string,
-  fix: string,
+  fix: string
 ): Promise<ValidationResult> {
   try {
     const res = await fetch(url, {

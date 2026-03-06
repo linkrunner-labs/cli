@@ -18,7 +18,13 @@ import {
 import { ApiError } from "../api/client.js";
 import { generateCodeSnippets, type CodeSnippets } from "../generators/code.js";
 import { generateProjectConfig, saveConfig } from "../generators/config.js";
-import { spinner, header, info, pass, error as logError } from "../utils/output.js";
+import {
+  spinner,
+  header,
+  info,
+  pass,
+  error as logError,
+} from "../utils/output.js";
 import { PROJECT_TYPES, type ProjectType } from "../types/index.js";
 
 // --- Step 1: Detect project type ---
@@ -151,13 +157,15 @@ async function createNewProject(): Promise<Project> {
       type: "input",
       name: "name",
       message: "Project name:",
-      validate: (input: string) => (input.trim() ? true : "Project name is required"),
+      validate: (input: string) =>
+        input.trim() ? true : "Project name is required",
     },
     {
       type: "input",
       name: "company",
       message: "Company name:",
-      validate: (input: string) => (input.trim() ? true : "Company name is required"),
+      validate: (input: string) =>
+        input.trim() ? true : "Company name is required",
     },
     {
       type: "input",
@@ -222,7 +230,7 @@ async function createNewProject(): Promise<Project> {
 
 async function fetchCredentials(
   projectId: number,
-  projectType: ProjectType,
+  projectType: ProjectType
 ): Promise<{ projectToken: string; sdkCredentials: SDKCredential[] }> {
   const credSpinner = spinner("Fetching credentials...");
 
@@ -244,10 +252,24 @@ async function fetchCredentials(
     }
 
     // Determine which platforms need credentials
-    const needsAndroid = ["flutter", "react-native", "expo", "android", "capacitor"].includes(projectType);
-    const needsIos = ["flutter", "react-native", "expo", "ios", "capacitor"].includes(projectType);
+    const needsAndroid = [
+      "flutter",
+      "react-native",
+      "expo",
+      "android",
+      "capacitor",
+    ].includes(projectType);
+    const needsIos = [
+      "flutter",
+      "react-native",
+      "expo",
+      "ios",
+      "capacitor",
+    ].includes(projectType);
 
-    const hasAndroid = sdkCreds.some((c) => c.platform === "ANDROID" && c.active);
+    const hasAndroid = sdkCreds.some(
+      (c) => c.platform === "ANDROID" && c.active
+    );
     const hasIos = sdkCreds.some((c) => c.platform === "IOS" && c.active);
 
     // Create missing credentials
@@ -281,19 +303,30 @@ async function fetchCredentials(
 
 // --- Step 5: Install SDK ---
 
-function getInstallCommand(projectType: ProjectType): { cmd: string; description: string } | null {
+function getInstallCommand(
+  projectType: ProjectType
+): { cmd: string; description: string } | null {
   switch (projectType) {
     case "flutter":
-      return { cmd: "flutter pub add linkrunner", description: "Install Flutter SDK" };
+      return {
+        cmd: "flutter pub add linkrunner",
+        description: "Install Flutter SDK",
+      };
     case "react-native":
-      return { cmd: "npm install rn-linkrunner", description: "Install React Native SDK" };
+      return {
+        cmd: "npm install rn-linkrunner",
+        description: "Install React Native SDK",
+      };
     case "expo":
       return {
         cmd: "npm install rn-linkrunner && npx expo install expo-linkrunner",
         description: "Install Expo SDK",
       };
     case "web":
-      return { cmd: "npm install @linkrunner/web-sdk", description: "Install Web SDK" };
+      return {
+        cmd: "npm install @linkrunner/web-sdk",
+        description: "Install Web SDK",
+      };
     case "capacitor":
       return {
         cmd: "npm install capacitor-linkrunner && npx cap sync",
@@ -310,7 +343,9 @@ async function installSDK(projectType: ProjectType): Promise<void> {
   const installCmd = getInstallCommand(projectType);
 
   if (!installCmd) {
-    info(`Native ${projectType} SDK must be added manually. See the code snippets below.`);
+    info(
+      `Native ${projectType} SDK must be added manually. See the code snippets below.`
+    );
     return;
   }
 
@@ -354,10 +389,14 @@ async function installSDK(projectType: ProjectType): Promise<void> {
     if (allSucceeded) {
       installSpinner.succeed(`${installCmd.description} complete`);
     } else {
-      installSpinner.warn(`Install may have issues. Run manually: ${installCmd.cmd}`);
+      installSpinner.warn(
+        `Install may have issues. Run manually: ${installCmd.cmd}`
+      );
     }
   } catch {
-    installSpinner.warn(`Could not run install. Run manually: ${installCmd.cmd}`);
+    installSpinner.warn(
+      `Could not run install. Run manually: ${installCmd.cmd}`
+    );
   }
 }
 
@@ -411,11 +450,11 @@ function getConfigModifications(projectType: ProjectType): FileModification[] {
       if (!existsSync(iosDir)) continue;
 
       // Find Info.plist
-      const plistCandidates = [
-        join(iosDir, "Runner", "Info.plist"),
-      ];
+      const plistCandidates = [join(iosDir, "Runner", "Info.plist")];
       try {
-        const entries = Bun.spawnSync(["ls", iosDir]).stdout.toString().split("\n");
+        const entries = Bun.spawnSync(["ls", iosDir])
+          .stdout.toString()
+          .split("\n");
         for (const entry of entries) {
           const name = entry.trim();
           if (name.endsWith(".xcodeproj")) {
@@ -431,7 +470,8 @@ function getConfigModifications(projectType: ProjectType): FileModification[] {
         if (existsSync(plistPath)) {
           modifications.push({
             filePath: plistPath,
-            description: "Add NSUserTrackingUsageDescription for App Tracking Transparency",
+            description:
+              "Add NSUserTrackingUsageDescription for App Tracking Transparency",
             contentToAdd: [
               "<key>NSUserTrackingUsageDescription</key>",
               "<string>This identifier will be used to deliver personalized ads and improve your app experience.</string>",
@@ -466,7 +506,9 @@ function getConfigModifications(projectType: ProjectType): FileModification[] {
   return modifications;
 }
 
-async function applyConfigModifications(projectType: ProjectType): Promise<void> {
+async function applyConfigModifications(
+  projectType: ProjectType
+): Promise<void> {
   const modifications = getConfigModifications(projectType);
 
   if (modifications.length === 0) {
@@ -485,7 +527,9 @@ async function applyConfigModifications(projectType: ProjectType): Promise<void>
     console.log(`  ${chalk.bold(mod.description)}`);
     console.log(`  File: ${chalk.dim(mod.filePath)}`);
     console.log();
-    console.log(chalk.green("  + " + mod.contentToAdd.split("\n").join("\n  + ")));
+    console.log(
+      chalk.green("  + " + mod.contentToAdd.split("\n").join("\n  + "))
+    );
     console.log();
 
     const { apply } = await inquirer.prompt<{ apply: boolean }>([
@@ -510,7 +554,7 @@ async function applyConfigModifications(projectType: ProjectType): Promise<void>
     try {
       applyModification(mod);
       pass(mod.description);
-    } catch (err) {
+    } catch {
       logError(`Failed to apply: ${mod.description}`);
     }
   }
@@ -521,21 +565,24 @@ function applyModification(mod: FileModification): void {
 
   if (mod.filePath.endsWith("AndroidManifest.xml")) {
     // Add permissions before <application or after <manifest
-    const lines = mod.contentToAdd.split("\n").map((l) => `    ${l}`).join("\n");
-    const modified = content.replace(
-      /(<manifest[^>]*>)/,
-      `$1\n\n${lines}`,
-    );
+    const lines = mod.contentToAdd
+      .split("\n")
+      .map((l) => `    ${l}`)
+      .join("\n");
+    const modified = content.replace(/(<manifest[^>]*>)/, `$1\n\n${lines}`);
     writeFileSync(mod.filePath, modified, "utf-8");
     return;
   }
 
   if (mod.filePath.endsWith("Info.plist")) {
     // Add before closing </dict>
-    const lines = mod.contentToAdd.split("\n").map((l) => `\t${l}`).join("\n");
+    const lines = mod.contentToAdd
+      .split("\n")
+      .map((l) => `\t${l}`)
+      .join("\n");
     const modified = content.replace(
       /([\t ]*<\/dict>\s*<\/plist>)/,
-      `${lines}\n$1`,
+      `${lines}\n$1`
     );
     writeFileSync(mod.filePath, modified, "utf-8");
     return;
@@ -551,7 +598,7 @@ function applyModification(mod: FileModification): void {
       const hasPlugin = appJson.expo.plugins.some(
         (p: unknown) =>
           (typeof p === "string" && p === "expo-linkrunner") ||
-          (Array.isArray(p) && p[0] === "expo-linkrunner"),
+          (Array.isArray(p) && p[0] === "expo-linkrunner")
       );
 
       if (!hasPlugin) {
@@ -564,7 +611,11 @@ function applyModification(mod: FileModification): void {
         ]);
       }
 
-      writeFileSync(mod.filePath, JSON.stringify(appJson, null, 2) + "\n", "utf-8");
+      writeFileSync(
+        mod.filePath,
+        JSON.stringify(appJson, null, 2) + "\n",
+        "utf-8"
+      );
     } catch {
       throw new Error("Failed to parse app.json");
     }
@@ -574,7 +625,11 @@ function applyModification(mod: FileModification): void {
 
 // --- Step 7: Show code snippets (with optional LLM auto-insertion) ---
 
-function displaySnippet(label: string, description: string, code: string): void {
+function displaySnippet(
+  label: string,
+  description: string,
+  code: string
+): void {
   console.log(chalk.bold(`  ${label}`));
   console.log(chalk.dim(`  ${description}`));
   console.log();
@@ -582,7 +637,7 @@ function displaySnippet(label: string, description: string, code: string): void 
     code
       .split("\n")
       .map((l) => `    ${chalk.white(l)}`)
-      .join("\n"),
+      .join("\n")
   );
   console.log();
 }
@@ -590,7 +645,7 @@ function displaySnippet(label: string, description: string, code: string): void 
 async function tryAutoInsert(
   projectType: ProjectType,
   codeType: "init" | "signup" | "setUserData",
-  snippetLabel: string,
+  snippetLabel: string
 ): Promise<boolean> {
   const { autoInsert } = await inquirer.prompt<{ autoInsert: boolean }>([
     {
@@ -607,15 +662,25 @@ async function tryAutoInsert(
     const { getInsertionPoint } = await import("../llm/analyzer.js");
     const { promptAndInsertCode } = await import("../utils/code-inserter.js");
 
-    const result = await getInsertionPoint(projectType, process.cwd(), codeType);
+    const result = await getInsertionPoint(
+      projectType,
+      process.cwd(),
+      codeType
+    );
     const insertionPoint = result?.structured?.insertionPoint;
 
     if (!insertionPoint) {
-      info("Could not determine where to insert the code. Copy the snippet above manually.");
+      info(
+        "Could not determine where to insert the code. Copy the snippet above manually."
+      );
       return false;
     }
 
-    return await promptAndInsertCode(process.cwd(), insertionPoint, snippetLabel);
+    return await promptAndInsertCode(
+      process.cwd(),
+      insertionPoint,
+      snippetLabel
+    );
   } catch {
     info("Auto-insertion unavailable. Copy the snippet above manually.");
     return false;
@@ -624,27 +689,41 @@ async function tryAutoInsert(
 
 async function showAndInsertCodeSnippets(
   snippets: CodeSnippets,
-  projectType: ProjectType,
+  projectType: ProjectType
 ): Promise<void> {
   header("Code Snippets");
 
   // 1. Initialization
-  displaySnippet("1. Initialization", "Add this to your app startup:", snippets.init);
+  displaySnippet(
+    "1. Initialization",
+    "Add this to your app startup:",
+    snippets.init
+  );
   await tryAutoInsert(projectType, "init", "init()");
 
   // 2. Signup
-  displaySnippet("2. User Registration (Signup)", "Call once after user completes onboarding:", snippets.signup);
+  displaySnippet(
+    "2. User Registration (Signup)",
+    "Call once after user completes onboarding:",
+    snippets.signup
+  );
   await tryAutoInsert(projectType, "signup", "signup()");
 
   // 3. Set User Data
-  displaySnippet("3. Set User Data", "Call each time the app opens with a logged-in user:", snippets.setUserData);
+  displaySnippet(
+    "3. Set User Data",
+    "Call each time the app opens with a logged-in user:",
+    snippets.setUserData
+  );
   await tryAutoInsert(projectType, "setUserData", "setUserData()");
 }
 
 // --- Step 9: Run doctor ---
 
 async function runDoctor(): Promise<void> {
-  const { shouldRunDoctor } = await inquirer.prompt<{ shouldRunDoctor: boolean }>([
+  const { shouldRunDoctor } = await inquirer.prompt<{
+    shouldRunDoctor: boolean;
+  }>([
     {
       type: "confirm",
       name: "shouldRunDoctor",
@@ -678,7 +757,10 @@ export async function initCommand(): Promise<void> {
   const project = await selectOrCreateProject();
 
   // Step 4: Fetch credentials
-  const { projectToken, sdkCredentials } = await fetchCredentials(project.id, projectType);
+  const { projectToken, sdkCredentials } = await fetchCredentials(
+    project.id,
+    projectType
+  );
 
   // Step 5: Install SDK
   await installSDK(projectType);
@@ -687,11 +769,15 @@ export async function initCommand(): Promise<void> {
   await applyConfigModifications(projectType);
 
   // Step 7: Generate and show code snippets
-  const androidCred = sdkCredentials.find((c) => c.platform === "ANDROID" && c.active);
+  const androidCred = sdkCredentials.find(
+    (c) => c.platform === "ANDROID" && c.active
+  );
   const iosCred = sdkCredentials.find((c) => c.platform === "IOS" && c.active);
 
   // Pick the most relevant credential for code snippets
-  const primaryCred = ["ios"].includes(projectType) ? iosCred : androidCred ?? iosCred;
+  const primaryCred = ["ios"].includes(projectType)
+    ? iosCred
+    : (androidCred ?? iosCred);
 
   const snippets = generateCodeSnippets(projectType, {
     projectToken,
@@ -721,6 +807,8 @@ export async function initCommand(): Promise<void> {
   console.log(`  Platform: ${chalk.cyan(projectType)}`);
   console.log(`  Config: ${chalk.dim(configPath)}`);
   console.log();
-  console.log(chalk.dim("  Run `lr doctor` anytime to verify your integration."));
+  console.log(
+    chalk.dim("  Run `lr doctor` anytime to verify your integration.")
+  );
   console.log();
 }

@@ -13,9 +13,10 @@ interface CodeSnippets {
 }
 
 function flutterSnippets(p: CodeSnippetParams): CodeSnippets {
-  const signingArgs = p.secretKey && p.keyId
-    ? `\n      '${p.secretKey}',\n      '${p.keyId}',`
-    : "";
+  const signingArgs =
+    p.secretKey && p.keyId
+      ? `\n      '${p.secretKey}',\n      '${p.keyId}',`
+      : "";
 
   return {
     init: `import 'package:linkrunner/linkrunner.dart';
@@ -27,7 +28,7 @@ Future<void> initLinkrunner() async {
     );
     print('LinkRunner initialized');
   } catch (e) {
-    print('Error initializing LinkRunner: \$e');
+    print('Error initializing LinkRunner: $e');
   }
 }
 
@@ -51,7 +52,7 @@ void initState() {
     );
     print('Signup successful');
   } catch (e) {
-    print('Error during signup: \$e');
+    print('Error during signup: $e');
   }
 }`,
 
@@ -66,16 +67,15 @@ void initState() {
     );
     print('User data set successfully');
   } catch (e) {
-    print('Error setting user data: \$e');
+    print('Error setting user data: $e');
   }
 }`,
   };
 }
 
 function reactNativeSnippets(p: CodeSnippetParams): CodeSnippets {
-  const signingArgs = p.secretKey && p.keyId
-    ? `\n    '${p.secretKey}',\n    '${p.keyId}',`
-    : "";
+  const signingArgs =
+    p.secretKey && p.keyId ? `\n    '${p.secretKey}',\n    '${p.keyId}',` : "";
 
   return {
     init: `import linkrunner from 'rn-linkrunner';
@@ -119,9 +119,10 @@ const init = async () => {
 }
 
 function androidSnippets(p: CodeSnippetParams): CodeSnippets {
-  const signingArgs = p.secretKey && p.keyId
-    ? `\n                    secretKey = "${p.secretKey}",\n                    keyId = "${p.keyId}",`
-    : "";
+  const signingArgs =
+    p.secretKey && p.keyId
+      ? `\n                    secretKey = "${p.secretKey}",\n                    keyId = "${p.keyId}",`
+      : "";
 
   return {
     init: `import io.linkrunner.sdk.LinkRunner
@@ -166,9 +167,10 @@ LinkRunner.getInstance().setUserData(userData)`,
 }
 
 function iosSnippets(p: CodeSnippetParams): CodeSnippets {
-  const signingArgs = p.secretKey && p.keyId
-    ? `,\n                    secretKey: "${p.secretKey}",\n                    keyId: "${p.keyId}"`
-    : "";
+  const signingArgs =
+    p.secretKey && p.keyId
+      ? `,\n                    secretKey: "${p.secretKey}",\n                    keyId: "${p.keyId}"`
+      : "";
 
   return {
     init: `import Linkrunner
@@ -238,9 +240,8 @@ window.LinkrunnerSDK.init({
 }
 
 function capacitorSnippets(p: CodeSnippetParams): CodeSnippets {
-  const signingArgs = p.secretKey && p.keyId
-    ? `\n    '${p.secretKey}',\n    '${p.keyId}',`
-    : "";
+  const signingArgs =
+    p.secretKey && p.keyId ? `\n    '${p.secretKey}',\n    '${p.keyId}',` : "";
 
   return {
     init: `import linkrunner from 'capacitor-linkrunner';
@@ -280,19 +281,20 @@ init();`,
   };
 }
 
-const generators: Record<ProjectType, (p: CodeSnippetParams) => CodeSnippets> = {
-  flutter: flutterSnippets,
-  "react-native": reactNativeSnippets,
-  expo: reactNativeSnippets,
-  android: androidSnippets,
-  ios: iosSnippets,
-  web: webSnippets,
-  capacitor: capacitorSnippets,
-};
+const generators: Record<ProjectType, (p: CodeSnippetParams) => CodeSnippets> =
+  {
+    flutter: flutterSnippets,
+    "react-native": reactNativeSnippets,
+    expo: reactNativeSnippets,
+    android: androidSnippets,
+    ios: iosSnippets,
+    web: webSnippets,
+    capacitor: capacitorSnippets,
+  };
 
 export function generateCodeSnippets(
   type: ProjectType,
-  params: CodeSnippetParams,
+  params: CodeSnippetParams
 ): CodeSnippets {
   return generators[type](params);
 }

@@ -1,5 +1,10 @@
-import { getAuthToken, getEnvironment } from "../config/store.js";
+import {
+  getAuthToken,
+  getEnvironment,
+  clearCliToken,
+} from "../config/store.js";
 import { API_BASE_URLS } from "../config/constants.js";
+import { debug } from "../utils/debug.js";
 
 interface ApiResponse<T = unknown> {
   msg: string;
@@ -10,7 +15,7 @@ interface ApiResponse<T = unknown> {
 class ApiError extends Error {
   constructor(
     public statusCode: number,
-    message: string,
+    message: string
   ) {
     super(message);
     this.name = "ApiError";
@@ -39,9 +44,10 @@ function getHeaders(): Record<string, string> {
 async function request<T>(
   method: string,
   path: string,
-  body?: unknown,
+  body?: unknown
 ): Promise<ApiResponse<T>> {
   const url = `${getBaseUrl()}${path}`;
+  debug(`${method} ${url}`);
 
   const res = await fetch(url, {
     method,
@@ -49,14 +55,26 @@ async function request<T>(
     body: body ? JSON.stringify(body) : undefined,
   });
 
+  debug(`${method} ${path} -> ${res.status}`);
+
   if (res.status === 401) {
-    throw new ApiError(401, "Session expired. Run `lr login` to re-authenticate.");
+    // If using stored token (not env var), clear it so user can re-login
+    if (!process.env.LINKRUNNER_TOKEN) {
+      clearCliToken();
+    }
+    throw new ApiError(
+      401,
+      "Session expired. Run `lr login` to re-authenticate."
+    );
   }
 
   const json = (await res.json()) as ApiResponse<T>;
 
   if (!res.ok) {
-    throw new ApiError(res.status, json.msg || `Request failed with status ${res.status}`);
+    throw new ApiError(
+      res.status,
+      json.msg || `Request failed with status ${res.status}`
+    );
   }
 
   return json;
@@ -66,11 +84,17 @@ export async function apiGet<T>(path: string): Promise<ApiResponse<T>> {
   return request<T>("GET", path);
 }
 
-export async function apiPost<T>(path: string, body?: unknown): Promise<ApiResponse<T>> {
+export async function apiPost<T>(
+  path: string,
+  body?: unknown
+): Promise<ApiResponse<T>> {
   return request<T>("POST", path, body);
 }
 
-export async function apiPut<T>(path: string, body?: unknown): Promise<ApiResponse<T>> {
+export async function apiPut<T>(
+  path: string,
+  body?: unknown
+): Promise<ApiResponse<T>> {
   return request<T>("PUT", path, body);
 }
 

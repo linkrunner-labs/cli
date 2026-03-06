@@ -8,6 +8,16 @@ export async function logoutCommand(): Promise<void> {
     return;
   }
 
+  if (process.env.LINKRUNNER_TOKEN) {
+    console.log();
+    console.log(
+      chalk.yellow("  Note: LINKRUNNER_TOKEN environment variable is set.")
+    );
+    console.log(
+      "  Unset it to fully log out: " + chalk.dim("unset LINKRUNNER_TOKEN")
+    );
+  }
+
   const email = getEmail();
   clearAuth();
 

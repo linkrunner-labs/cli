@@ -1,19 +1,45 @@
 import { Command } from "commander";
 import chalk from "chalk";
+import { setDebug } from "./utils/debug.js";
+import { overrideEnvironment } from "./config/store.js";
 
 const program = new Command();
 
 program
   .name("lr")
   .version("0.1.0")
-  .description("Linkrunner CLI - SDK integration, validation, and debugging");
+  .description("Linkrunner CLI - SDK integration, validation, and debugging")
+  .option("--debug", "Enable debug logging")
+  .option("--env <environment>", "Override environment for this command");
+
+program.hook("preAction", (_thisCommand, _actionCommand) => {
+  const opts = program.opts();
+  if (opts.debug) {
+    setDebug(true);
+  }
+  if (opts.env) {
+    const env = opts.env;
+    if (env !== "production" && env !== "staging") {
+      console.error(
+        chalk.red(`Invalid environment "${env}".`),
+        `Valid options: production, staging`
+      );
+      process.exit(1);
+    }
+    overrideEnvironment(env);
+  }
+});
 
 program
   .command("login")
   .description("Authenticate with Linkrunner")
-  .action(async () => {
+  .option(
+    "--token <token>",
+    "Authenticate with a CLI token or API key (non-interactive)"
+  )
+  .action(async (options) => {
     const { loginCommand } = await import("./commands/login.js");
-    await loginCommand();
+    await loginCommand(options);
   });
 
 program
@@ -127,6 +153,14 @@ program
   .action(async (options) => {
     const { suggestCommand } = await import("./commands/suggest.js");
     await suggestCommand(options);
+  });
+
+program
+  .command("env [environment]")
+  .description("Show or switch the current environment (production/staging)")
+  .action(async (environment?: string) => {
+    const { envCommand } = await import("./commands/env.js");
+    await envCommand(environment);
   });
 
 function classifyError(err: unknown): string {

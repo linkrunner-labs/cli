@@ -9,7 +9,8 @@ export const API_BASE_URLS = {
 
 export const DOC_LINKS: Record<ProjectType, string> = {
   flutter: "https://docs.linkrunner.io/sdks/flutter/getting-started",
-  "react-native": "https://docs.linkrunner.io/sdks/react-native/getting-started",
+  "react-native":
+    "https://docs.linkrunner.io/sdks/react-native/getting-started",
   expo: "https://docs.linkrunner.io/sdks/expo/getting-started",
   ios: "https://docs.linkrunner.io/sdks/ios/getting-started",
   android: "https://docs.linkrunner.io/sdks/android/getting-started",

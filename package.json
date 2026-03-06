@@ -5,29 +5,25 @@
   "bin": {
     "lr": "./bin/lr.js"
   },
-  "files": [
-    "dist/index.js",
-    "bin/lr.js"
-  ],
   "scripts": {
     "build": "bun build src/index.ts --outdir dist --target bun",
     "build:binary": "bun run scripts/build.ts",
     "build:binary:local": "bun build src/index.ts --compile --outfile dist/lr",
     "dev": "bun run src/index.ts",
+    "dev:watch": "bun --watch run src/index.ts",
+    "dev:doctor": "bun run src/index.ts doctor",
+    "dev:init": "bun run src/index.ts init",
+    "dev:test": "bun run src/index.ts test",
+    "dev:login": "bun run src/index.ts login",
+    "link:local": "bun link",
     "typecheck": "tsc --noEmit",
-    "prepublishOnly": "bun run build"
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "format": "prettier --write 'src/**/*.ts'",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check": "tsc --noEmit && eslint src/"
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/linkrunner-labs/cli"
-  },
-  "keywords": [
-    "linkrunner",
-    "cli",
-    "mobile",
-    "attribution",
-    "sdk"
-  ],
   "author": "Darshil Rathod <darshilrathod0@gmail.com>",
   "license": "MIT",
   "dependencies": {
@@ -43,9 +39,15 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^22.10.0",
     "@types/plist": "^3.0.5",
     "bun-types": "^1.1.0",
-    "typescript": "^5.7.0"
+    "eslint": "^10.0.2",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.8.1",
+    "typescript": "^5.7.0",
+    "typescript-eslint": "^8.56.1",
+    "vitest": "^4.0.18"
   }
 }

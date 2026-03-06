@@ -31,12 +31,12 @@ function parseSSELine(line: string): SSEChunk | null {
 
 export async function analyzeWithLLM(
   request: AnalyzeRequest,
-  timeoutMs: number = DEFAULT_TIMEOUT_MS,
+  timeoutMs: number = DEFAULT_TIMEOUT_MS
 ): Promise<AnalysisResult | null> {
   const token = getAuthToken();
   if (!token) {
     console.log(
-      `  ${chalk.yellow("WARN")} Not authenticated. Run ${chalk.cyan("`lr login`")} to enable AI analysis.`,
+      `  ${chalk.yellow("WARN")} Not authenticated. Run ${chalk.cyan("`lr login`")} to enable AI analysis.`
     );
     return null;
   }
@@ -62,7 +62,7 @@ export async function analyzeWithLLM(
     if (res.status === 401) {
       spin.fail("Session expired");
       console.log(
-        `  ${chalk.dim("Run")} ${chalk.cyan("`lr login`")} ${chalk.dim("to re-authenticate.")}`,
+        `  ${chalk.dim("Run")} ${chalk.cyan("`lr login`")} ${chalk.dim("to re-authenticate.")}`
       );
       return null;
     }
@@ -71,13 +71,9 @@ export async function analyzeWithLLM(
       spin.fail("Rate limit reached");
       const retryAfter = res.headers.get("Retry-After");
       if (retryAfter) {
-        console.log(
-          `  ${chalk.dim(`Try again in ${retryAfter} seconds.`)}`,
-        );
+        console.log(`  ${chalk.dim(`Try again in ${retryAfter} seconds.`)}`);
       } else {
-        console.log(
-          `  ${chalk.dim("Please wait a moment and try again.")}`,
-        );
+        console.log(`  ${chalk.dim("Please wait a moment and try again.")}`);
       }
       return null;
     }
@@ -90,9 +86,7 @@ export async function analyzeWithLLM(
           console.log(`  ${chalk.dim(body.msg)}`);
         }
       } catch {
-        console.log(
-          `  ${chalk.dim(`Server returned status ${res.status}`)}`,
-        );
+        console.log(`  ${chalk.dim(`Server returned status ${res.status}`)}`);
       }
       return null;
     }
@@ -114,14 +108,14 @@ export async function analyzeWithLLM(
     if (err instanceof DOMException && err.name === "AbortError") {
       spin.fail("Analysis timed out");
       console.log(
-        `  ${chalk.dim("The request took too long. Try again or reduce project size.")}`,
+        `  ${chalk.dim("The request took too long. Try again or reduce project size.")}`
       );
       return null;
     }
 
     spin.fail("Could not connect to Linkrunner API");
     console.log(
-      `  ${chalk.dim("Check your network connection and try again.")}`,
+      `  ${chalk.dim("Check your network connection and try again.")}`
     );
     return null;
   } finally {
@@ -131,7 +125,7 @@ export async function analyzeWithLLM(
 
 async function readSSEStream(
   res: Response,
-  spin: ReturnType<typeof spinner>,
+  spin: ReturnType<typeof spinner>
 ): Promise<AnalysisResult | null> {
   const body = res.body;
   if (!body) {

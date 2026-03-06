@@ -2,7 +2,11 @@ import { readFileSync } from "fs";
 import chalk from "chalk";
 import inquirer from "inquirer";
 import { detectProjectType } from "../detectors/project-detector.js";
-import type { ValidationResult, ProjectType, ProjectPaths } from "../types/index.js";
+import type {
+  ValidationResult,
+  ProjectType,
+  ProjectPaths,
+} from "../types/index.js";
 import type { AnalysisIssue } from "../llm/types.js";
 import { validateAndroid } from "../validators/android.js";
 import {
@@ -44,21 +48,48 @@ const FIX_REGISTRY: Record<string, FixEntry> = {
   // Android file fixes
   "android-min-sdk": { type: "file", fn: fixMinSdkVersion },
   "android-internet-permission": { type: "file", fn: fixInternetPermission },
-  "android-network-state-permission": { type: "file", fn: fixNetworkStatePermission },
+  "android-network-state-permission": {
+    type: "file",
+    fn: fixNetworkStatePermission,
+  },
   "android-backup-rules": { type: "file", fn: fixBackupRules },
   "android-maven-central": { type: "file", fn: fixMavenCentral },
   // Shell command fixes
-  "flutter-sdk-installed": { type: "command", command: "flutter pub add linkrunner" },
-  "flutter-sdk-version": { type: "command", command: "flutter pub upgrade linkrunner" },
+  "flutter-sdk-installed": {
+    type: "command",
+    command: "flutter pub add linkrunner",
+  },
+  "flutter-sdk-version": {
+    type: "command",
+    command: "flutter pub upgrade linkrunner",
+  },
   "rn-sdk-installed": { type: "command", command: "npm install rn-linkrunner" },
-  "rn-sdk-version": { type: "command", command: "npm install rn-linkrunner@latest" },
+  "rn-sdk-version": {
+    type: "command",
+    command: "npm install rn-linkrunner@latest",
+  },
   "rn-pods-installed": { type: "command", command: "cd ios && pod install" },
-  "expo-rn-sdk-installed": { type: "command", command: "npm install rn-linkrunner" },
-  "expo-rn-sdk-version": { type: "command", command: "npm install rn-linkrunner@latest" },
-  "expo-plugin-installed": { type: "command", command: "npx expo install expo-linkrunner" },
-  "capacitor-sdk-installed": { type: "command", command: "npm install capacitor-linkrunner" },
+  "expo-rn-sdk-installed": {
+    type: "command",
+    command: "npm install rn-linkrunner",
+  },
+  "expo-rn-sdk-version": {
+    type: "command",
+    command: "npm install rn-linkrunner@latest",
+  },
+  "expo-plugin-installed": {
+    type: "command",
+    command: "npx expo install expo-linkrunner",
+  },
+  "capacitor-sdk-installed": {
+    type: "command",
+    command: "npm install capacitor-linkrunner",
+  },
   "capacitor-sync": { type: "command", command: "npx cap sync" },
-  "web-sdk-installed": { type: "command", command: "npm install @linkrunner/web-sdk" },
+  "web-sdk-installed": {
+    type: "command",
+    command: "npm install @linkrunner/web-sdk",
+  },
 };
 
 const SKAN_ENDPOINT = "https://linkrunner-skan.com";
@@ -67,42 +98,51 @@ const DEFAULT_TRACKING_MESSAGE =
 
 function getCurrentValue(
   id: string,
-  paths: ProjectPaths,
+  paths: ProjectPaths
 ): { before: string; after: string } | null {
   try {
     switch (id) {
       case "ios-deployment-target": {
         if (!paths.podfile) return null;
         const content = readFileSync(paths.podfile, "utf-8");
-        const match = content.match(/^\s*platform\s+:ios\s*,\s*['"](\d+\.?\d*)['"]$/m);
+        const match = content.match(
+          /^\s*platform\s+:ios\s*,\s*['"](\d+\.?\d*)['"]$/m
+        );
         const commented = content.match(/^\s*#\s*platform\s+:ios/m);
-        const before = match?.[1] ?? (commented ? "(commented out)" : "(not set)");
+        const before =
+          match?.[1] ?? (commented ? "(commented out)" : "(not set)");
         return { before, after: "15.0" };
       }
       case "ios-tracking-description": {
-        if (!paths.infoPlist) return { before: "(missing)", after: DEFAULT_TRACKING_MESSAGE };
+        if (!paths.infoPlist)
+          return { before: "(missing)", after: DEFAULT_TRACKING_MESSAGE };
         const data = parsePlist(paths.infoPlist);
         const current = data?.["NSUserTrackingUsageDescription"];
         return {
-          before: typeof current === "string" && current ? current : "(missing)",
+          before:
+            typeof current === "string" && current ? current : "(missing)",
           after: DEFAULT_TRACKING_MESSAGE,
         };
       }
       case "ios-skan-report-endpoint": {
-        if (!paths.infoPlist) return { before: "(missing)", after: SKAN_ENDPOINT };
+        if (!paths.infoPlist)
+          return { before: "(missing)", after: SKAN_ENDPOINT };
         const data = parsePlist(paths.infoPlist);
         const current = data?.["NSAdvertisingAttributionReportEndpoint"];
         return {
-          before: typeof current === "string" && current ? current : "(missing)",
+          before:
+            typeof current === "string" && current ? current : "(missing)",
           after: SKAN_ENDPOINT,
         };
       }
       case "ios-skan-copy-endpoint": {
-        if (!paths.infoPlist) return { before: "(missing)", after: SKAN_ENDPOINT };
+        if (!paths.infoPlist)
+          return { before: "(missing)", after: SKAN_ENDPOINT };
         const data = parsePlist(paths.infoPlist);
         const current = data?.["AttributionCopyEndpoint"];
         return {
-          before: typeof current === "string" && current ? current : "(missing)",
+          before:
+            typeof current === "string" && current ? current : "(missing)",
           after: SKAN_ENDPOINT,
         };
       }
@@ -115,15 +155,20 @@ function getCurrentValue(
       case "android-internet-permission":
         return {
           before: "(missing)",
-          after: '<uses-permission android:name="android.permission.INTERNET" />',
+          after:
+            '<uses-permission android:name="android.permission.INTERNET" />',
         };
       case "android-network-state-permission":
         return {
           before: "(missing)",
-          after: '<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />',
+          after:
+            '<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />',
         };
       case "android-backup-rules":
-        return { before: "(not configured)", after: "fullBackupContent + dataExtractionRules" };
+        return {
+          before: "(not configured)",
+          after: "fullBackupContent + dataExtractionRules",
+        };
       case "android-maven-central":
         return { before: "(missing)", after: "mavenCentral()" };
       default: {
@@ -160,7 +205,7 @@ export interface DoctorOptions {
 function runPlatformValidator(
   type: ProjectType,
   projectRoot: string,
-  paths: import("../types/index.js").ProjectPaths,
+  paths: import("../types/index.js").ProjectPaths
 ): ValidationResult[] {
   switch (type) {
     case "flutter":
@@ -215,11 +260,11 @@ export async function doctorCommand(options: DoctorOptions): Promise<void> {
         JSON.stringify({
           error: "Could not detect project type",
           results: [],
-        }),
+        })
       );
     } else {
       output.error(
-        "Could not detect project type. Run this command from your project root.",
+        "Could not detect project type. Run this command from your project root."
       );
     }
     if (options.ci) {
@@ -230,7 +275,7 @@ export async function doctorCommand(options: DoctorOptions): Promise<void> {
 
   if (!options.json) {
     console.log(
-      `  ${chalk.blue("Project:")} ${detected.type}${detected.sdkVersion ? ` (SDK v${detected.sdkVersion})` : ""}`,
+      `  ${chalk.blue("Project:")} ${detected.type}${detected.sdkVersion ? ` (SDK v${detected.sdkVersion})` : ""}`
     );
     console.log(`  ${chalk.blue("Root:")} ${detected.paths.root}`);
     console.log();
@@ -246,7 +291,7 @@ export async function doctorCommand(options: DoctorOptions): Promise<void> {
   const platformResults = runPlatformValidator(
     detected.type,
     detected.paths.root,
-    detected.paths,
+    detected.paths
   );
   allResults.push(...platformResults);
 
@@ -283,7 +328,7 @@ export async function doctorCommand(options: DoctorOptions): Promise<void> {
         detected.type,
         detected.paths.root,
         allResults,
-        detected.sdkVersion,
+        detected.sdkVersion
       );
 
       if (result?.structured?.issues && result.structured.issues.length > 0) {
@@ -316,13 +361,15 @@ export async function doctorCommand(options: DoctorOptions): Promise<void> {
       } else {
         if (!options.json) {
           output.info(
-            "Deep analysis unavailable. Run 'lr login' to enable AI-powered features.",
+            "Deep analysis unavailable. Run 'lr login' to enable AI-powered features."
           );
         }
       }
     } catch {
       if (!options.json) {
-        output.info("Deep analysis could not be completed. Continuing with standard results.");
+        output.info(
+          "Deep analysis could not be completed. Continuing with standard results."
+        );
       }
     }
   }
@@ -330,7 +377,7 @@ export async function doctorCommand(options: DoctorOptions): Promise<void> {
   // Step 5: Auto-fix
   if (options.fix && !options.json) {
     const fixable = allResults.filter(
-      (r) => r.autoFixable && r.status !== "pass",
+      (r) => r.autoFixable && r.status !== "pass"
     );
 
     output.header("Auto-fix");
@@ -339,7 +386,7 @@ export async function doctorCommand(options: DoctorOptions): Promise<void> {
       output.info("No fixable issues found.");
     } else {
       output.info(
-        `${fixable.length} fixable issue${fixable.length !== 1 ? "s" : ""} found`,
+        `${fixable.length} fixable issue${fixable.length !== 1 ? "s" : ""} found`
       );
       console.log();
 
@@ -353,7 +400,7 @@ export async function doctorCommand(options: DoctorOptions): Promise<void> {
         const diffInfo = getCurrentValue(result.id, detected.paths);
 
         console.log(
-          `  ${chalk.bold(`[${i + 1}/${fixable.length}]`)} ${result.name}`,
+          `  ${chalk.bold(`[${i + 1}/${fixable.length}]`)} ${result.name}`
         );
         if (diffInfo) {
           output.diff("", diffInfo.before, diffInfo.after);

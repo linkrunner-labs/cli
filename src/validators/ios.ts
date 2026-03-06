@@ -1,10 +1,15 @@
 import { readFileSync, writeFileSync } from "fs";
 import plist from "plist";
 import { parsePlist } from "../utils/file-parser.js";
-import type { ValidationResult, ProjectPaths, ProjectType } from "../types/index.js";
+import type {
+  ValidationResult,
+  ProjectPaths,
+  ProjectType,
+} from "../types/index.js";
 
 const DOCS_URL = "https://docs.linkrunner.io/sdks/ios/getting-started";
-const SKAN_DOCS_URL = "https://docs.linkrunner.io/features/skadnetwork-integration";
+const SKAN_DOCS_URL =
+  "https://docs.linkrunner.io/features/skadnetwork-integration";
 const SKAN_ENDPOINT = "https://linkrunner-skan.com";
 const DEFAULT_TRACKING_MESSAGE =
   "This identifier will be used to deliver personalized ads to you.";
@@ -41,7 +46,9 @@ function checkDeploymentTarget(paths: ProjectPaths): ValidationResult {
   }
 
   // Match: platform :ios, '15.0' or platform :ios, "15.0"
-  const match = content.match(/^\s*platform\s+:ios\s*,\s*['"](\d+\.?\d*)['"]$/m);
+  const match = content.match(
+    /^\s*platform\s+:ios\s*,\s*['"](\d+\.?\d*)['"]$/m
+  );
   if (!match) {
     // Check for commented-out platform line
     const commentedMatch = content.match(/^\s*#\s*platform\s+:ios/m);
@@ -115,7 +122,7 @@ function checkPlistKey(
   expectedValue: string | null,
   id: string,
   label: string,
-  docsUrl: string,
+  docsUrl: string
 ): ValidationResult {
   if (!paths.infoPlist) {
     return {
@@ -212,12 +219,12 @@ function checkPlistKey(
 export function fixDeploymentTarget(paths: ProjectPaths): boolean {
   if (!paths.podfile) return false;
   try {
-    let content = readFileSync(paths.podfile, "utf-8");
+    const content = readFileSync(paths.podfile, "utf-8");
 
     // Replace existing platform line (quoted version)
     const replaced = content.replace(
       /^(\s*)platform\s+:ios\s*,\s*['"][\d.]+['"]/m,
-      "$1platform :ios, '15.0'",
+      "$1platform :ios, '15.0'"
     );
     if (replaced !== content) {
       writeFileSync(paths.podfile, replaced, "utf-8");
@@ -227,7 +234,7 @@ export function fixDeploymentTarget(paths: ProjectPaths): boolean {
     // Uncomment commented-out platform line
     const uncommented = content.replace(
       /^(\s*)#\s*platform\s+:ios\s*,\s*['"][\d.]+['"]/m,
-      "$1platform :ios, '15.0'",
+      "$1platform :ios, '15.0'"
     );
     if (uncommented !== content) {
       writeFileSync(paths.podfile, uncommented, "utf-8");
@@ -240,7 +247,11 @@ export function fixDeploymentTarget(paths: ProjectPaths): boolean {
   }
 }
 
-function setPlistValue(paths: ProjectPaths, key: string, value: string): boolean {
+function setPlistValue(
+  paths: ProjectPaths,
+  key: string,
+  value: string
+): boolean {
   if (!paths.infoPlist) return false;
   try {
     const content = readFileSync(paths.infoPlist, "utf-8");
@@ -259,11 +270,19 @@ function setPlistValue(paths: ProjectPaths, key: string, value: string): boolean
 }
 
 export function fixTrackingDescription(paths: ProjectPaths): boolean {
-  return setPlistValue(paths, "NSUserTrackingUsageDescription", DEFAULT_TRACKING_MESSAGE);
+  return setPlistValue(
+    paths,
+    "NSUserTrackingUsageDescription",
+    DEFAULT_TRACKING_MESSAGE
+  );
 }
 
 export function fixSkanReportEndpoint(paths: ProjectPaths): boolean {
-  return setPlistValue(paths, "NSAdvertisingAttributionReportEndpoint", SKAN_ENDPOINT);
+  return setPlistValue(
+    paths,
+    "NSAdvertisingAttributionReportEndpoint",
+    SKAN_ENDPOINT
+  );
 }
 
 export function fixSkanCopyEndpoint(paths: ProjectPaths): boolean {
@@ -272,7 +291,10 @@ export function fixSkanCopyEndpoint(paths: ProjectPaths): boolean {
 
 // --- Main export ---
 
-export function validateIos(_paths: ProjectPaths, _projectType: ProjectType): ValidationResult[] {
+export function validateIos(
+  _paths: ProjectPaths,
+  _projectType: ProjectType
+): ValidationResult[] {
   const results: ValidationResult[] = [];
 
   results.push(checkDeploymentTarget(_paths));
@@ -283,8 +305,8 @@ export function validateIos(_paths: ProjectPaths, _projectType: ProjectType): Va
       null,
       "ios-tracking-description",
       "App Tracking Transparency description",
-      DOCS_URL,
-    ),
+      DOCS_URL
+    )
   );
   results.push(
     checkPlistKey(
@@ -293,8 +315,8 @@ export function validateIos(_paths: ProjectPaths, _projectType: ProjectType): Va
       SKAN_ENDPOINT,
       "ios-skan-report-endpoint",
       "SKAdNetwork report endpoint",
-      SKAN_DOCS_URL,
-    ),
+      SKAN_DOCS_URL
+    )
   );
   results.push(
     checkPlistKey(
@@ -303,8 +325,8 @@ export function validateIos(_paths: ProjectPaths, _projectType: ProjectType): Va
       SKAN_ENDPOINT,
       "ios-skan-copy-endpoint",
       "SKAdNetwork copy endpoint",
-      SKAN_DOCS_URL,
-    ),
+      SKAN_DOCS_URL
+    )
   );
 
   return results;

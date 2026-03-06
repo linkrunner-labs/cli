@@ -57,17 +57,23 @@ export async function getProjects(): Promise<ApiResponse<Project[]>> {
   return apiGet<Project[]>("/project");
 }
 
-export async function getProjectToken(projectId: number): Promise<ApiResponse<ProjectToken>> {
+export async function getProjectToken(
+  projectId: number
+): Promise<ApiResponse<ProjectToken>> {
   return apiGet<ProjectToken>(`/project/token?project_id=${projectId}`);
 }
 
-export async function getSDKCredentials(projectId: number): Promise<ApiResponse<SDKCredential[]>> {
-  return apiGet<SDKCredential[]>(`/project/sdk-credentials?project_id=${projectId}`);
+export async function getSDKCredentials(
+  projectId: number
+): Promise<ApiResponse<SDKCredential[]>> {
+  return apiGet<SDKCredential[]>(
+    `/project/sdk-credentials?project_id=${projectId}`
+  );
 }
 
 export async function createSDKCredentials(
   projectId: number,
-  platform: "ANDROID" | "IOS",
+  platform: "ANDROID" | "IOS"
 ): Promise<ApiResponse<SDKCredential>> {
   return apiPost<SDKCredential>("/project/sdk-credentials", {
     project_id: projectId,
@@ -75,11 +81,15 @@ export async function createSDKCredentials(
   });
 }
 
-export async function preCreateCheck(): Promise<ApiResponse<PreCreateCheckResponse>> {
+export async function preCreateCheck(): Promise<
+  ApiResponse<PreCreateCheckResponse>
+> {
   return apiGet<PreCreateCheckResponse>("/project/pre-create-check");
 }
 
-export async function createProject(params: CreateProjectParams): Promise<ApiResponse<Project>> {
+export async function createProject(
+  params: CreateProjectParams
+): Promise<ApiResponse<Project>> {
   return apiPost<Project>("/project", params);
 }
 

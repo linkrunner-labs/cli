@@ -16,7 +16,7 @@ function createBackup(filePath: string): string {
 export function showDiffPreview(
   filePath: string,
   insertionLine: number,
-  codeToInsert: string,
+  codeToInsert: string
 ): void {
   const content = readFileSync(filePath, "utf-8");
   const lines = content.split("\n");
@@ -38,12 +38,16 @@ export function showDiffPreview(
   // Inserted lines
   for (let j = 0; j < insertLines.length; j++) {
     const lineNum = String(insertionLine + j).padStart(4);
-    console.log(`  ${chalk.green("+" + lineNum)} ${chalk.dim("│")} ${chalk.green(insertLines[j])}`);
+    console.log(
+      `  ${chalk.green("+" + lineNum)} ${chalk.dim("│")} ${chalk.green(insertLines[j])}`
+    );
   }
 
   // Lines after insertion point
   for (let i = insertionLine - 1; i < endContext; i++) {
-    const lineNum = String(insertionLine + insertLines.length + (i - (insertionLine - 1))).padStart(4);
+    const lineNum = String(
+      insertionLine + insertLines.length + (i - (insertionLine - 1))
+    ).padStart(4);
     console.log(`  ${chalk.dim(lineNum)} ${chalk.dim("│")} ${lines[i]}`);
   }
 
@@ -53,7 +57,7 @@ export function showDiffPreview(
 export function insertCodeAtLine(
   filePath: string,
   line: number,
-  codeToInsert: string,
+  codeToInsert: string
 ): void {
   const content = readFileSync(filePath, "utf-8");
   const lines = content.split("\n");
@@ -69,7 +73,7 @@ export function insertCodeAtLine(
 export async function promptAndInsertCode(
   rootPath: string,
   insertionPoint: InsertionPoint,
-  snippetLabel: string,
+  snippetLabel: string
 ): Promise<boolean> {
   const filePath = join(rootPath, insertionPoint.file);
 
@@ -94,7 +98,9 @@ export async function promptAndInsertCode(
   ]);
 
   if (!apply) {
-    info(`Skipped auto-insertion for ${snippetLabel}. Copy the snippet above manually.`);
+    info(
+      `Skipped auto-insertion for ${snippetLabel}. Copy the snippet above manually.`
+    );
     return false;
   }
 
@@ -105,7 +111,7 @@ export async function promptAndInsertCode(
     insertCodeAtLine(filePath, insertionPoint.line, insertionPoint.code);
     pass(`${snippetLabel} inserted into ${insertionPoint.file}`);
     return true;
-  } catch (err) {
+  } catch {
     logError(`Failed to insert ${snippetLabel}`);
     return false;
   }

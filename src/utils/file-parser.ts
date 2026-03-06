@@ -56,11 +56,16 @@ export function parseGradle(filePath: string): GradleInfo | null {
     const content = readFileSync(filePath, "utf-8");
 
     const minSdkMatch = content.match(/minSdk(?:Version)?\s*[=:]\s*(\d+)/);
-    const compileSdkMatch = content.match(/compileSdk(?:Version)?\s*[=:]\s*(\d+)/);
-    const targetSdkMatch = content.match(/targetSdk(?:Version)?\s*[=:]\s*(\d+)/);
+    const compileSdkMatch = content.match(
+      /compileSdk(?:Version)?\s*[=:]\s*(\d+)/
+    );
+    const targetSdkMatch = content.match(
+      /targetSdk(?:Version)?\s*[=:]\s*(\d+)/
+    );
 
     const dependencies: string[] = [];
-    const depRegex = /(?:implementation|api|compileOnly)\s*[("']([^"')]+)['")\s]/g;
+    const depRegex =
+      /(?:implementation|api|compileOnly)\s*[("']([^"')]+)['")\s]/g;
     let depMatch;
     while ((depMatch = depRegex.exec(content)) !== null) {
       if (depMatch[1]) {
@@ -69,14 +74,17 @@ export function parseGradle(filePath: string): GradleInfo | null {
     }
 
     const repositories: string[] = [];
-    const repoRegex = /(?:maven\s*\{[^}]*url\s*[=:]?\s*(?:uri\()?["']([^"']+)["']|mavenCentral\(\)|google\(\)|jcenter\(\))/g;
+    const repoRegex =
+      /(?:maven\s*\{[^}]*url\s*[=:]?\s*(?:uri\()?["']([^"']+)["']|mavenCentral\(\)|google\(\)|jcenter\(\))/g;
     let repoMatch;
     while ((repoMatch = repoRegex.exec(content)) !== null) {
       repositories.push(repoMatch[1] ?? repoMatch[0]);
     }
 
     return {
-      minSdkVersion: minSdkMatch?.[1] ? parseInt(minSdkMatch[1], 10) : undefined,
+      minSdkVersion: minSdkMatch?.[1]
+        ? parseInt(minSdkMatch[1], 10)
+        : undefined,
       compileSdkVersion: compileSdkMatch?.[1]
         ? parseInt(compileSdkMatch[1], 10)
         : undefined,

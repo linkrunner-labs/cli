@@ -49,13 +49,29 @@ const PLATFORM_CONFIG: Record<
     extensions: [".ts", ".tsx", ".js", ".jsx"],
     scanDirs: ["src", "app"],
     skipPatterns: [/\.test\.[jt]sx?$/, /\.spec\.[jt]sx?$/, /\.d\.ts$/],
-    entryFiles: ["App.tsx", "App.jsx", "App.ts", "App.js", "src/App.tsx", "app/_layout.tsx", "index.js", "index.ts"],
+    entryFiles: [
+      "App.tsx",
+      "App.jsx",
+      "App.ts",
+      "App.js",
+      "src/App.tsx",
+      "app/_layout.tsx",
+      "index.js",
+      "index.ts",
+    ],
   },
   expo: {
     extensions: [".ts", ".tsx", ".js", ".jsx"],
     scanDirs: ["src", "app"],
     skipPatterns: [/\.test\.[jt]sx?$/, /\.spec\.[jt]sx?$/, /\.d\.ts$/],
-    entryFiles: ["App.tsx", "App.jsx", "app/_layout.tsx", "app/index.tsx", "index.js", "index.ts"],
+    entryFiles: [
+      "App.tsx",
+      "App.jsx",
+      "app/_layout.tsx",
+      "app/index.tsx",
+      "index.js",
+      "index.ts",
+    ],
   },
   android: {
     extensions: [".kt", ".java"],
@@ -92,7 +108,7 @@ const MAX_LINES_PER_FILE = 500;
 function walkFiles(
   dir: string,
   extensions: string[],
-  skipPatterns: RegExp[],
+  skipPatterns: RegExp[]
 ): string[] {
   const results: string[] = [];
 
@@ -141,7 +157,7 @@ function readFileTruncated(filePath: string): string | null {
 
 function collectFiles(
   projectType: ProjectType,
-  rootPath: string,
+  rootPath: string
 ): Array<{ path: string; content: string }> {
   const config = PLATFORM_CONFIG[projectType];
   if (!config) return [];
@@ -163,9 +179,7 @@ function collectFiles(
   }
 
   // Sort: entry-point files first, then alphabetically
-  const entrySet = new Set(
-    config.entryFiles.map((f) => join(rootPath, f)),
-  );
+  const entrySet = new Set(config.entryFiles.map((f) => join(rootPath, f)));
   allFiles.sort((a, b) => {
     const aIsEntry = entrySet.has(a) ? 0 : 1;
     const bIsEntry = entrySet.has(b) ? 0 : 1;
@@ -217,10 +231,14 @@ function parseIssues(content: string): AnalysisIssue[] | undefined {
       return obj.issues
         .filter(
           (i): i is Record<string, unknown> =>
-            typeof i === "object" && i !== null && typeof (i as Record<string, unknown>).message === "string",
+            typeof i === "object" &&
+            i !== null &&
+            typeof (i as Record<string, unknown>).message === "string"
         )
         .map((i) => ({
-          severity: (["error", "warn", "info"].includes(i.severity as string) ? i.severity : "warn") as AnalysisIssue["severity"],
+          severity: (["error", "warn", "info"].includes(i.severity as string)
+            ? i.severity
+            : "warn") as AnalysisIssue["severity"],
           message: i.message as string,
           file: typeof i.file === "string" ? i.file : undefined,
           line: typeof i.line === "number" ? i.line : undefined,
@@ -235,22 +253,32 @@ function parseInsertionPoint(content: string): InsertionPoint | undefined {
   const json = tryParseJsonBlock(content);
   if (json && typeof json === "object") {
     const obj = json as Record<string, unknown>;
-    if (typeof obj.file === "string" && typeof obj.line === "number" && typeof obj.code === "string") {
+    if (
+      typeof obj.file === "string" &&
+      typeof obj.line === "number" &&
+      typeof obj.code === "string"
+    ) {
       return {
         file: obj.file,
         line: obj.line,
         code: obj.code,
-        description: typeof obj.description === "string" ? obj.description : undefined,
+        description:
+          typeof obj.description === "string" ? obj.description : undefined,
       };
     }
     if (obj.insertionPoint && typeof obj.insertionPoint === "object") {
       const ip = obj.insertionPoint as Record<string, unknown>;
-      if (typeof ip.file === "string" && typeof ip.line === "number" && typeof ip.code === "string") {
+      if (
+        typeof ip.file === "string" &&
+        typeof ip.line === "number" &&
+        typeof ip.code === "string"
+      ) {
         return {
           file: ip.file,
           line: ip.line,
           code: ip.code,
-          description: typeof ip.description === "string" ? ip.description : undefined,
+          description:
+            typeof ip.description === "string" ? ip.description : undefined,
         };
       }
     }
@@ -276,12 +304,18 @@ function parseSuggestions(content: string): FeatureSuggestion[] | undefined {
   const json = tryParseJsonBlock(content);
   if (json && typeof json === "object") {
     const obj = json as Record<string, unknown>;
-    const arr = Array.isArray(obj.suggestions) ? obj.suggestions : Array.isArray(obj) ? obj : null;
+    const arr = Array.isArray(obj.suggestions)
+      ? obj.suggestions
+      : Array.isArray(obj)
+        ? obj
+        : null;
     if (arr) {
       return arr
         .filter(
           (s): s is Record<string, unknown> =>
-            typeof s === "object" && s !== null && typeof (s as Record<string, unknown>).feature === "string",
+            typeof s === "object" &&
+            s !== null &&
+            typeof (s as Record<string, unknown>).feature === "string"
         )
         .map((s) => ({
           feature: s.feature as string,
@@ -298,7 +332,7 @@ function parseSuggestions(content: string): FeatureSuggestion[] | undefined {
 function checkAuth(): boolean {
   if (isAuthenticated()) return true;
   console.log(
-    `  ${chalk.yellow("WARN")} Not authenticated. Run ${chalk.cyan("`lr login`")} to enable AI analysis.`,
+    `  ${chalk.yellow("WARN")} Not authenticated. Run ${chalk.cyan("`lr login`")} to enable AI analysis.`
   );
   return false;
 }
@@ -309,7 +343,7 @@ export async function analyzeProject(
   projectType: ProjectType,
   rootPath: string,
   validationResults: ValidationResult[],
-  sdkVersion?: string,
+  sdkVersion?: string
 ): Promise<AnalysisResult | null> {
   if (!checkAuth()) return null;
 
@@ -324,7 +358,8 @@ export async function analyzeProject(
     files,
     context: {
       validationResults,
-      projectConfig: projectConfig as Record<string, unknown> | undefined ?? undefined,
+      projectConfig:
+        (projectConfig as Record<string, unknown> | undefined) ?? undefined,
       sdkVersion,
       platforms: projectConfig?.platforms,
     },
@@ -344,7 +379,7 @@ export async function analyzeProject(
 export async function getInsertionPoint(
   projectType: ProjectType,
   rootPath: string,
-  codeType: "init" | "signup" | "trackEvent" | "capturePayment" | "setUserData",
+  codeType: "init" | "signup" | "trackEvent" | "capturePayment" | "setUserData"
 ): Promise<AnalysisResult | null> {
   if (!checkAuth()) return null;
 
@@ -358,7 +393,8 @@ export async function getInsertionPoint(
     projectType,
     files,
     context: {
-      projectConfig: projectConfig as Record<string, unknown> | undefined ?? undefined,
+      projectConfig:
+        (projectConfig as Record<string, unknown> | undefined) ?? undefined,
       platforms: projectConfig?.platforms,
     },
     prompt: `Find the best location to insert a ${codeType}() call in this ${projectType} project. Return the file path, line number, and the exact code to insert.`,
@@ -378,7 +414,7 @@ export async function getInsertionPoint(
 export async function getSuggestions(
   projectType: ProjectType,
   rootPath: string,
-  detectedFeatures: string[],
+  detectedFeatures: string[]
 ): Promise<AnalysisResult | null> {
   if (!checkAuth()) return null;
 
@@ -393,7 +429,8 @@ export async function getSuggestions(
     files,
     context: {
       detectedFeatures,
-      projectConfig: projectConfig as Record<string, unknown> | undefined ?? undefined,
+      projectConfig:
+        (projectConfig as Record<string, unknown> | undefined) ?? undefined,
       platforms: projectConfig?.platforms,
     },
   };

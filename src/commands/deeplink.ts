@@ -3,7 +3,13 @@ import inquirer from "inquirer";
 import { existsSync, readFileSync, writeFileSync, copyFileSync } from "fs";
 import { getProjectConfig } from "../config/store.js";
 import { detectProjectType } from "../detectors/project-detector.js";
-import { header, info, pass, error as logError, warn } from "../utils/output.js";
+import {
+  header,
+  info,
+  pass,
+  error as logError,
+  warn,
+} from "../utils/output.js";
 
 interface DeeplinkSetupOptions {
   domain?: string;
@@ -29,14 +35,20 @@ function buildIntentFilter(domain: string): string {
   ].join("\n");
 }
 
-function hasDeepLinkIntentFilter(manifestContent: string, domain: string): boolean {
+function hasDeepLinkIntentFilter(
+  manifestContent: string,
+  domain: string
+): boolean {
   return (
     manifestContent.includes('android:autoVerify="true"') &&
     manifestContent.includes(`android:host="${domain}"`)
   );
 }
 
-function insertIntentFilter(manifestContent: string, intentFilter: string): string | null {
+function insertIntentFilter(
+  manifestContent: string,
+  intentFilter: string
+): string | null {
   // Find the main activity (the one containing android.intent.action.MAIN)
   // and insert the intent-filter before its closing </activity> tag.
   const mainActionIndex = manifestContent.indexOf("android.intent.action.MAIN");
@@ -53,7 +65,10 @@ function insertIntentFilter(manifestContent: string, intentFilter: string): stri
   return before + "\n" + intentFilter + "\n" + after;
 }
 
-function generateAssetLinks(packageName: string, fingerprints: string[]): string {
+function generateAssetLinks(
+  packageName: string,
+  fingerprints: string[]
+): string {
   const assetLinks = [
     {
       relation: ["delegate_permission/common.handle_all_urls"],
@@ -85,7 +100,7 @@ function generateAASA(teamId: string, bundleId: string): string {
 async function setupAndroid(
   domain: string,
   manifestPath: string,
-  androidConfig: { package_name: string; sha256_cert_fingerprints?: string[] },
+  androidConfig: { package_name: string; sha256_cert_fingerprints?: string[] }
 ): Promise<void> {
   header("Android Configuration");
 
@@ -103,7 +118,9 @@ async function setupAndroid(
     const intentFilter = buildIntentFilter(domain);
 
     console.log();
-    console.log(chalk.bold("  Intent filter will be added to AndroidManifest.xml:"));
+    console.log(
+      chalk.bold("  Intent filter will be added to AndroidManifest.xml:")
+    );
     console.log();
     for (const line of intentFilter.split("\n")) {
       console.log(chalk.green(`  + ${line.trimStart()}`));
@@ -124,7 +141,7 @@ async function setupAndroid(
       if (!modified) {
         logError(
           "Could not find main activity in AndroidManifest.xml",
-          "Ensure your manifest has an activity with android.intent.action.MAIN",
+          "Ensure your manifest has an activity with android.intent.action.MAIN"
         );
         return;
       }
@@ -143,14 +160,17 @@ async function setupAndroid(
   if (fingerprints.length === 0) {
     warn(
       "No SHA-256 certificate fingerprints configured",
-      "Add sha256_cert_fingerprints to the android section of .linkrunner.json",
+      "Add sha256_cert_fingerprints to the android section of .linkrunner.json"
     );
   }
 
   console.log();
   console.log(chalk.bold("  Digital Asset Links (assetlinks.json):"));
   console.log();
-  const assetLinksJson = generateAssetLinks(androidConfig.package_name, fingerprints);
+  const assetLinksJson = generateAssetLinks(
+    androidConfig.package_name,
+    fingerprints
+  );
   for (const line of assetLinksJson.split("\n")) {
     console.log(`    ${chalk.white(line)}`);
   }
@@ -160,12 +180,14 @@ async function setupAndroid(
 
 async function setupIos(
   domain: string,
-  iosConfig: { bundle_id: string; team_id?: string; app_prefix?: string },
+  iosConfig: { bundle_id: string; team_id?: string; app_prefix?: string }
 ): Promise<void> {
   header("iOS Configuration");
 
   // Associated Domains entitlement
-  console.log(chalk.bold("  Add this Associated Domain to your Xcode project:"));
+  console.log(
+    chalk.bold("  Add this Associated Domain to your Xcode project:")
+  );
   console.log(`    ${chalk.cyan(`applinks:${domain}`)}`);
   console.log();
 
@@ -174,7 +196,7 @@ async function setupIos(
   if (!teamId) {
     warn(
       "No team_id or app_prefix configured",
-      "Add team_id to the ios section of .linkrunner.json",
+      "Add team_id to the ios section of .linkrunner.json"
     );
     return;
   }
@@ -186,13 +208,20 @@ async function setupIos(
     console.log(`    ${chalk.white(line)}`);
   }
   console.log();
-  info(`Host this at: https://${domain}/.well-known/apple-app-site-association`);
+  info(
+    `Host this at: https://${domain}/.well-known/apple-app-site-association`
+  );
 }
 
-export async function deeplinkSetupCommand(options: DeeplinkSetupOptions): Promise<void> {
+export async function deeplinkSetupCommand(
+  options: DeeplinkSetupOptions
+): Promise<void> {
   const config = getProjectConfig();
   if (!config) {
-    logError("No .linkrunner.json found", "Run `lr init` to set up your project first");
+    logError(
+      "No .linkrunner.json found",
+      "Run `lr init` to set up your project first"
+    );
     process.exit(1);
   }
 
@@ -206,7 +235,8 @@ export async function deeplinkSetupCommand(options: DeeplinkSetupOptions): Promi
         type: "input",
         name: "inputDomain",
         message: "Enter your deep link domain:",
-        validate: (input: string) => (input.trim() ? true : "Domain is required"),
+        validate: (input: string) =>
+          input.trim() ? true : "Domain is required",
       },
     ]);
     domain = inputDomain.trim();
@@ -222,7 +252,10 @@ export async function deeplinkSetupCommand(options: DeeplinkSetupOptions): Promi
     if (manifestPath) {
       await setupAndroid(domain, manifestPath, config.android);
     } else {
-      warn("Could not find AndroidManifest.xml", "Ensure your Android project structure is correct");
+      warn(
+        "Could not find AndroidManifest.xml",
+        "Ensure your Android project structure is correct"
+      );
     }
   }
 

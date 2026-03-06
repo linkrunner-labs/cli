@@ -63,7 +63,10 @@ function flutterEventCode(p: EventCodeParams): string {
       return `await LinkRunner().trackEvent(\n  name: '${p.params.name}',\n  data: ${data},\n);`;
     }
     case "payment": {
-      const args = [`amount: ${p.params.amount}`, `currency: '${p.params.currency}'`];
+      const args = [
+        `amount: ${p.params.amount}`,
+        `currency: '${p.params.currency}'`,
+      ];
       if (p.params.transactionId) {
         args.push(`transactionId: '${p.params.transactionId}'`);
       }
@@ -255,7 +258,7 @@ const generators: Record<ProjectType, (p: EventCodeParams) => string> = {
 
 export function generateEventCode(
   type: ProjectType,
-  params: EventCodeParams,
+  params: EventCodeParams
 ): string {
   return generators[type](params);
 }

@@ -67,7 +67,7 @@ function parseGitignore(rootPath: string): Set<string> {
 function walkFiles(
   dir: string,
   extensions: string[],
-  skipSet: Set<string>,
+  skipSet: Set<string>
 ): string[] {
   const results: string[] = [];
 
@@ -148,18 +148,26 @@ const FEATURES: FeatureDef[] = [
       flutter: [/LinkRunner\(\)\.init\s*\(/],
       "react-native": [/linkrunner\.init\s*\(/],
       expo: [/linkrunner\.init\s*\(/],
-      capacitor: [/linkrunner\.init\s*\(/, /LinkrunnerSDK\.init\s*\(/, /useLinkrunner\s*\(/],
-      android: [/LinkRunner\.getInstance\(\)\.init\s*\(/, /LinkRunner\.init\s*\(/],
+      capacitor: [
+        /linkrunner\.init\s*\(/,
+        /LinkrunnerSDK\.init\s*\(/,
+        /useLinkrunner\s*\(/,
+      ],
+      android: [
+        /LinkRunner\.getInstance\(\)\.init\s*\(/,
+        /LinkRunner\.init\s*\(/,
+      ],
       ios: [/LinkrunnerSDK\.shared\.initialize\s*\(/],
       web: [/LinkrunnerSDK\.init\s*\(/, /useLinkrunner\s*\(/],
     },
     example: {
-      flutter: "await LinkRunner().init(config: LRConfig(token: 'YOUR_TOKEN'));",
+      flutter:
+        "await LinkRunner().init(config: LRConfig(token: 'YOUR_TOKEN'));",
       "react-native": "await linkrunner.init({ token: 'YOUR_TOKEN' });",
       expo: "await linkrunner.init({ token: 'YOUR_TOKEN' });",
       capacitor: "await linkrunner.init({ token: 'YOUR_TOKEN' });",
-      android: "LinkRunner.getInstance().init(context, \"YOUR_TOKEN\")",
-      ios: "try await LinkrunnerSDK.shared.initialize(token: \"YOUR_TOKEN\")",
+      android: 'LinkRunner.getInstance().init(context, "YOUR_TOKEN")',
+      ios: 'try await LinkrunnerSDK.shared.initialize(token: "YOUR_TOKEN")',
       web: "LinkrunnerSDK.init({ token: 'YOUR_TOKEN' });",
     },
   },
@@ -174,7 +182,10 @@ const FEATURES: FeatureDef[] = [
       "react-native": [/linkrunner\.signup\s*\(/],
       expo: [/linkrunner\.signup\s*\(/],
       capacitor: [/linkrunner\.signup\s*\(/, /LinkrunnerSDK\.signup\s*\(/],
-      android: [/LinkRunner\.getInstance\(\)\.signup\s*\(/, /LinkRunner\.signup\s*\(/],
+      android: [
+        /LinkRunner\.getInstance\(\)\.signup\s*\(/,
+        /LinkRunner\.signup\s*\(/,
+      ],
       ios: [/LinkrunnerSDK\.shared\.signup\s*\(/],
       web: [/LinkrunnerSDK\.signup\s*\(/],
     },
@@ -183,8 +194,8 @@ const FEATURES: FeatureDef[] = [
       "react-native": "await linkrunner.signup({ userId: 'USER_ID' });",
       expo: "await linkrunner.signup({ userId: 'USER_ID' });",
       capacitor: "await linkrunner.signup({ userId: 'USER_ID' });",
-      android: "LinkRunner.getInstance().signup(\"USER_ID\")",
-      ios: "try await LinkrunnerSDK.shared.signup(userId: \"USER_ID\")",
+      android: 'LinkRunner.getInstance().signup("USER_ID")',
+      ios: 'try await LinkrunnerSDK.shared.signup(userId: "USER_ID")',
       web: "LinkrunnerSDK.signup({ userId: 'USER_ID' });",
     },
   },
@@ -198,13 +209,20 @@ const FEATURES: FeatureDef[] = [
       flutter: [/LinkRunner\(\)\.setUserData\s*\(/],
       "react-native": [/linkrunner\.setUserData\s*\(/],
       expo: [/linkrunner\.setUserData\s*\(/],
-      capacitor: [/linkrunner\.setUserData\s*\(/, /LinkrunnerSDK\.setUserData\s*\(/],
-      android: [/LinkRunner\.getInstance\(\)\.setUserData\s*\(/, /LinkRunner\.setUserData\s*\(/],
+      capacitor: [
+        /linkrunner\.setUserData\s*\(/,
+        /LinkrunnerSDK\.setUserData\s*\(/,
+      ],
+      android: [
+        /LinkRunner\.getInstance\(\)\.setUserData\s*\(/,
+        /LinkRunner\.setUserData\s*\(/,
+      ],
       ios: [/LinkrunnerSDK\.shared\.setUserData\s*\(/],
       web: [/LinkrunnerSDK\.setUserData\s*\(/],
     },
     example: {
-      flutter: "await LinkRunner().setUserData(userData: LRUserData(id: 'USER_ID'));",
+      flutter:
+        "await LinkRunner().setUserData(userData: LRUserData(id: 'USER_ID'));",
       "react-native": "await linkrunner.setUserData({ id: 'USER_ID' });",
       expo: "await linkrunner.setUserData({ id: 'USER_ID' });",
       capacitor: "await linkrunner.setUserData({ id: 'USER_ID' });",
@@ -223,18 +241,26 @@ const FEATURES: FeatureDef[] = [
       flutter: [/LinkRunner\(\)\.trackEvent\s*\(/],
       "react-native": [/linkrunner\.trackEvent\s*\(/],
       expo: [/linkrunner\.trackEvent\s*\(/],
-      capacitor: [/linkrunner\.trackEvent\s*\(/, /LinkrunnerSDK\.trackEvent\s*\(/],
-      android: [/LinkRunner\.getInstance\(\)\.trackEvent\s*\(/, /LinkRunner\.trackEvent\s*\(/],
+      capacitor: [
+        /linkrunner\.trackEvent\s*\(/,
+        /LinkrunnerSDK\.trackEvent\s*\(/,
+      ],
+      android: [
+        /LinkRunner\.getInstance\(\)\.trackEvent\s*\(/,
+        /LinkRunner\.trackEvent\s*\(/,
+      ],
       ios: [/LinkrunnerSDK\.shared\.trackEvent\s*\(/],
       web: [/LinkrunnerSDK\.trackEvent\s*\(/],
     },
     example: {
       flutter: "await LinkRunner().trackEvent(name: 'event_name', data: {});",
-      "react-native": "await linkrunner.trackEvent({ name: 'event_name', data: {} });",
+      "react-native":
+        "await linkrunner.trackEvent({ name: 'event_name', data: {} });",
       expo: "await linkrunner.trackEvent({ name: 'event_name', data: {} });",
-      capacitor: "await linkrunner.trackEvent({ name: 'event_name', data: {} });",
-      android: "LinkRunner.getInstance().trackEvent(\"event_name\", data)",
-      ios: "try await LinkrunnerSDK.shared.trackEvent(name: \"event_name\", data: [:])",
+      capacitor:
+        "await linkrunner.trackEvent({ name: 'event_name', data: {} });",
+      android: 'LinkRunner.getInstance().trackEvent("event_name", data)',
+      ios: 'try await LinkrunnerSDK.shared.trackEvent(name: "event_name", data: [:])',
       web: "LinkrunnerSDK.trackEvent({ name: 'event_name', data: {} });",
     },
   },
@@ -248,18 +274,27 @@ const FEATURES: FeatureDef[] = [
       flutter: [/LinkRunner\(\)\.capturePayment\s*\(/],
       "react-native": [/linkrunner\.capturePayment\s*\(/],
       expo: [/linkrunner\.capturePayment\s*\(/],
-      capacitor: [/linkrunner\.capturePayment\s*\(/, /LinkrunnerSDK\.capturePayment\s*\(/],
-      android: [/LinkRunner\.getInstance\(\)\.capturePayment\s*\(/, /LinkRunner\.capturePayment\s*\(/],
+      capacitor: [
+        /linkrunner\.capturePayment\s*\(/,
+        /LinkrunnerSDK\.capturePayment\s*\(/,
+      ],
+      android: [
+        /LinkRunner\.getInstance\(\)\.capturePayment\s*\(/,
+        /LinkRunner\.capturePayment\s*\(/,
+      ],
       ios: [/LinkrunnerSDK\.shared\.capturePayment\s*\(/],
       web: [/LinkrunnerSDK\.capturePayment\s*\(/],
     },
     example: {
-      flutter: "await LinkRunner().capturePayment(amount: 9.99, currency: 'USD');",
-      "react-native": "await linkrunner.capturePayment({ amount: 9.99, currency: 'USD' });",
+      flutter:
+        "await LinkRunner().capturePayment(amount: 9.99, currency: 'USD');",
+      "react-native":
+        "await linkrunner.capturePayment({ amount: 9.99, currency: 'USD' });",
       expo: "await linkrunner.capturePayment({ amount: 9.99, currency: 'USD' });",
-      capacitor: "await linkrunner.capturePayment({ amount: 9.99, currency: 'USD' });",
-      android: "LinkRunner.getInstance().capturePayment(9.99, \"USD\")",
-      ios: "try await LinkrunnerSDK.shared.capturePayment(amount: 9.99, currency: \"USD\")",
+      capacitor:
+        "await linkrunner.capturePayment({ amount: 9.99, currency: 'USD' });",
+      android: 'LinkRunner.getInstance().capturePayment(9.99, "USD")',
+      ios: 'try await LinkrunnerSDK.shared.capturePayment(amount: 9.99, currency: "USD")',
       web: "LinkrunnerSDK.capturePayment({ amount: 9.99, currency: 'USD' });",
     },
   },
@@ -270,12 +305,26 @@ const FEATURES: FeatureDef[] = [
     why: "Enable deferred deep links and attribution",
     severity: "warn",
     patterns: {
-      flutter: [/LinkRunner\(\)\.getInitData\s*\(/, /onDeepLink/, /getInitialLink/],
-      "react-native": [/linkrunner\.getInitData\s*\(/, /Linking\.addEventListener/, /getInitialURL/],
+      flutter: [
+        /LinkRunner\(\)\.getInitData\s*\(/,
+        /onDeepLink/,
+        /getInitialLink/,
+      ],
+      "react-native": [
+        /linkrunner\.getInitData\s*\(/,
+        /Linking\.addEventListener/,
+        /getInitialURL/,
+      ],
       expo: [/linkrunner\.getInitData\s*\(/, /Linking\.addEventListener/],
       capacitor: [/linkrunner\.getInitData\s*\(/],
-      android: [/LinkRunner\.getInstance\(\)\.getInitData\s*\(/, /intent\.data/],
-      ios: [/LinkrunnerSDK\.shared\.getInitData\s*\(/, /userActivity\.webpageURL/],
+      android: [
+        /LinkRunner\.getInstance\(\)\.getInitData\s*\(/,
+        /intent\.data/,
+      ],
+      ios: [
+        /LinkrunnerSDK\.shared\.getInitData\s*\(/,
+        /userActivity\.webpageURL/,
+      ],
       web: [/LinkrunnerSDK\.getInitData\s*\(/],
     },
     example: {
@@ -329,11 +378,11 @@ export async function suggestCommand(options: SuggestOptions): Promise<void> {
         JSON.stringify({
           error: "Could not detect project type",
           features: [],
-        }),
+        })
       );
     } else {
       output.error(
-        "Could not detect project type. Run this command from your project root.",
+        "Could not detect project type. Run this command from your project root."
       );
     }
     return;
@@ -350,7 +399,7 @@ export async function suggestCommand(options: SuggestOptions): Promise<void> {
         JSON.stringify({
           error: `Unsupported project type: ${projectType}`,
           features: [],
-        }),
+        })
       );
     } else {
       output.error(`Unsupported project type: ${projectType}`);
@@ -379,10 +428,12 @@ export async function suggestCommand(options: SuggestOptions): Promise<void> {
         JSON.stringify({
           error: `No source files (${extensions.join(", ")}) found in project`,
           features: [],
-        }),
+        })
       );
     } else {
-      output.warn(`No source files (${extensions.join(", ")}) found in project`);
+      output.warn(
+        `No source files (${extensions.join(", ")}) found in project`
+      );
     }
     return;
   }
@@ -444,17 +495,22 @@ export async function suggestCommand(options: SuggestOptions): Promise<void> {
       const result = await getSuggestions(
         projectType,
         rootPath,
-        detectedFeatureKeys,
+        detectedFeatureKeys
       );
 
-      if (result?.structured?.suggestions && result.structured.suggestions.length > 0) {
+      if (
+        result?.structured?.suggestions &&
+        result.structured.suggestions.length > 0
+      ) {
         aiSuggestions = result.structured.suggestions;
 
         if (!options.json) {
           output.header("AI Recommendations");
 
           for (const suggestion of result.structured.suggestions) {
-            console.log(`  ${chalk.cyan("*")} ${chalk.bold(suggestion.feature)}`);
+            console.log(
+              `  ${chalk.cyan("*")} ${chalk.bold(suggestion.feature)}`
+            );
             console.log(`    ${chalk.dim(suggestion.reason)}`);
             if (suggestion.example) {
               console.log(`    ${chalk.dim("Example:")}`);
@@ -485,13 +541,13 @@ export async function suggestCommand(options: SuggestOptions): Promise<void> {
   } else {
     console.log();
     console.log(
-      chalk.bold(`Score: ${integrated}/${total} features integrated`),
+      chalk.bold(`Score: ${integrated}/${total} features integrated`)
     );
 
     if (integrated < total) {
       console.log();
       output.info(
-        "Add the missing features above to get the most out of Linkrunner.",
+        "Add the missing features above to get the most out of Linkrunner."
       );
     } else {
       console.log();

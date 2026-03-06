@@ -1,5 +1,9 @@
 import chalk from "chalk";
-import { isAuthenticated, getProjectConfig, getEnvironment } from "../config/store.js";
+import {
+  isAuthenticated,
+  getProjectConfig,
+  getEnvironment,
+} from "../config/store.js";
 import { apiGet, ApiError } from "../api/client.js";
 import * as output from "../utils/output.js";
 
@@ -65,7 +69,7 @@ export async function statusCommand(options: StatusOptions): Promise<void> {
     } else {
       output.error(
         "No .linkrunner.json found",
-        "Run `lr init` to set up your project",
+        "Run `lr init` to set up your project"
       );
     }
     return;
@@ -84,19 +88,23 @@ export async function statusCommand(options: StatusOptions): Promise<void> {
     output.header("Project Info");
     console.log(`  ${chalk.dim("Name:")}         ${config.project_name}`);
     console.log(`  ${chalk.dim("ID:")}           ${config.project_id}`);
-    console.log(`  ${chalk.dim("Platforms:")}    ${config.platforms.join(", ")}`);
+    console.log(
+      `  ${chalk.dim("Platforms:")}    ${config.platforms.join(", ")}`
+    );
     console.log(`  ${chalk.dim("Domain:")}       ${config.deep_link_domain}`);
     console.log(`  ${chalk.dim("Environment:")}  ${env}`);
   }
 
   // Step 4: Recent Activity
   let stats: ProjectStats | null = null;
-  const activitySpinner = options.json ? null : output.spinner("Fetching recent activity...");
+  const activitySpinner = options.json
+    ? null
+    : output.spinner("Fetching recent activity...");
 
   try {
     // TODO: verify endpoint path
     const res = await apiGet<ProjectStats>(
-      `/project/stats?project_id=${config.project_id}&days=${days}`,
+      `/project/stats?project_id=${config.project_id}&days=${days}`
     );
     stats = res.data;
     activitySpinner?.succeed("Activity loaded");
@@ -111,10 +119,18 @@ export async function statusCommand(options: StatusOptions): Promise<void> {
   if (!options.json) {
     output.header(`Recent Activity (last ${days} days)`);
     if (stats) {
-      console.log(`  ${chalk.dim("Installs:")}     ${formatNumber(stats.installs)}`);
-      console.log(`  ${chalk.dim("Signups:")}      ${formatNumber(stats.signups)}`);
-      console.log(`  ${chalk.dim("Events:")}       ${formatNumber(stats.events)}`);
-      console.log(`  ${chalk.dim("Revenue:")}      ${formatCurrency(stats.revenue, stats.currency)}`);
+      console.log(
+        `  ${chalk.dim("Installs:")}     ${formatNumber(stats.installs)}`
+      );
+      console.log(
+        `  ${chalk.dim("Signups:")}      ${formatNumber(stats.signups)}`
+      );
+      console.log(
+        `  ${chalk.dim("Events:")}       ${formatNumber(stats.events)}`
+      );
+      console.log(
+        `  ${chalk.dim("Revenue:")}      ${formatCurrency(stats.revenue, stats.currency)}`
+      );
     } else {
       output.warn("Activity data unavailable");
     }
@@ -122,12 +138,14 @@ export async function statusCommand(options: StatusOptions): Promise<void> {
 
   // Step 5: Active Campaigns
   let campaigns: Campaign[] | null = null;
-  const campaignSpinner = options.json ? null : output.spinner("Fetching campaigns...");
+  const campaignSpinner = options.json
+    ? null
+    : output.spinner("Fetching campaigns...");
 
   try {
     // TODO: verify endpoint path
     const res = await apiGet<Campaign[]>(
-      `/project/campaigns?project_id=${config.project_id}`,
+      `/project/campaigns?project_id=${config.project_id}`
     );
     campaigns = res.data;
     campaignSpinner?.succeed("Campaigns loaded");
@@ -143,7 +161,9 @@ export async function statusCommand(options: StatusOptions): Promise<void> {
     output.header("Active Campaigns");
     if (campaigns && campaigns.length > 0) {
       for (const c of campaigns) {
-        console.log(`  - ${c.name} (${c.platform}) ${chalk.dim(`— ${c.status}`)}`);
+        console.log(
+          `  - ${c.name} (${c.platform}) ${chalk.dim(`— ${c.status}`)}`
+        );
       }
     } else if (campaigns && campaigns.length === 0) {
       output.info("No active campaigns");

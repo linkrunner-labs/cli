@@ -25,7 +25,7 @@ async function resolvePlatform(platformFlag?: string): Promise<ProjectType> {
     }
     logError(
       `Unknown platform "${platformFlag}"`,
-      `Valid platforms: ${PROJECT_TYPES.join(", ")}`,
+      `Valid platforms: ${PROJECT_TYPES.join(", ")}`
     );
     process.exit(1);
   }
@@ -59,7 +59,7 @@ async function resolveEventType(typeFlag?: string): Promise<EventType> {
     }
     logError(
       `Unknown event type "${typeFlag}"`,
-      `Valid types: custom, payment, signup`,
+      `Valid types: custom, payment, signup`
     );
     process.exit(1);
   }
@@ -289,7 +289,7 @@ export async function eventsAddCommand(options: {
     code
       .split("\n")
       .map((l) => `    ${chalk.white(l)}`)
-      .join("\n"),
+      .join("\n")
   );
   console.log();
 
@@ -323,7 +323,10 @@ export async function eventsAddCommand(options: {
   }
 }
 
-const EVENT_TYPE_TO_CODE_TYPE: Record<EventType, "trackEvent" | "capturePayment" | "signup"> = {
+const EVENT_TYPE_TO_CODE_TYPE: Record<
+  EventType,
+  "trackEvent" | "capturePayment" | "signup"
+> = {
   custom: "trackEvent",
   payment: "capturePayment",
   signup: "signup",
@@ -331,7 +334,7 @@ const EVENT_TYPE_TO_CODE_TYPE: Record<EventType, "trackEvent" | "capturePayment"
 
 async function tryEventAutoInsert(
   platform: ProjectType,
-  eventType: EventType,
+  eventType: EventType
 ): Promise<boolean> {
   const { autoInsert } = await inquirer.prompt<{ autoInsert: boolean }>([
     {
@@ -352,9 +355,15 @@ async function tryEventAutoInsert(
   const insertionPoint = result?.structured?.insertionPoint;
 
   if (!insertionPoint) {
-    info("Could not determine where to insert the code. Copy the snippet above manually.");
+    info(
+      "Could not determine where to insert the code. Copy the snippet above manually."
+    );
     return false;
   }
 
-  return await promptAndInsertCode(process.cwd(), insertionPoint, `${eventType} event`);
+  return await promptAndInsertCode(
+    process.cwd(),
+    insertionPoint,
+    `${eventType} event`
+  );
 }

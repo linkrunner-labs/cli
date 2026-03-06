@@ -1,27 +1,58 @@
 import chalk from "chalk";
+import open from "open";
 import inquirer from "inquirer";
-import { isAuthenticated, getEmail, setAuthToken } from "../config/store.js";
-import { sendMagicLink, verifyMagicLink } from "../api/auth.js";
+import {
+  isAuthenticated,
+  getEmail,
+  setCliToken,
+  hasLegacyAuth,
+} from "../config/store.js";
+import {
+  initiateDeviceAuth,
+  pollDeviceToken,
+  verifyCliToken,
+} from "../api/auth.js";
 import { ApiError } from "../api/client.js";
 import { spinner } from "../utils/output.js";
 
-function isValidEmail(email: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function extractToken(input: string): string {
-  // Accept full URL or raw token
-  try {
-    const url = new URL(input);
-    const token = url.searchParams.get("token");
-    if (token) return token;
-  } catch {
-    // Not a URL, treat as raw token
+export async function loginCommand(options?: {
+  token?: string;
+}): Promise<void> {
+  // Support --token flag for non-interactive auth
+  if (options?.token) {
+    const verifySpinner = spinner("Verifying token...");
+    try {
+      const response = await verifyCliToken(options.token);
+      const user = response.data?.user;
+      setCliToken(options.token, user?.email ?? "");
+      verifySpinner.succeed("Authenticated successfully!");
+      console.log();
+      console.log(`  Welcome, ${chalk.cyan(user?.email ?? "user")}!`);
+    } catch (err) {
+      verifySpinner.fail("Token verification failed");
+      if (err instanceof Error) {
+        console.error(`  ${chalk.red(err.message)}`);
+      }
+      process.exit(1);
+    }
+    return;
   }
-  return input.trim();
-}
 
-export async function loginCommand(): Promise<void> {
+  // Show deprecation warning for legacy auth
+  if (hasLegacyAuth()) {
+    console.log();
+    console.log(
+      chalk.yellow(
+        "  Note: You are using legacy authentication. Please re-authenticate with `lr login` for improved security."
+      )
+    );
+    console.log();
+  }
+
   // Check if already authenticated
   if (isAuthenticated()) {
     const email = getEmail();
@@ -43,103 +74,82 @@ export async function loginCommand(): Promise<void> {
     }
   }
 
-  // Prompt for email
-  const { email } = await inquirer.prompt<{ email: string }>([
-    {
-      type: "input",
-      name: "email",
-      message: "Enter your email:",
-      validate: (input: string) => {
-        if (!input.trim()) return "Email is required";
-        if (!isValidEmail(input.trim())) return "Please enter a valid email address";
-        return true;
-      },
-    },
-  ]);
+  // Initiate device auth flow
+  const initSpinner = spinner("Initiating authentication...");
+  let deviceCode: string;
+  let userCode: string;
+  let verificationUrl: string;
 
-  const trimmedEmail = email.trim().toLowerCase();
-
-  // Send magic link
-  const sendSpinner = spinner("Sending magic link...");
   try {
-    await sendMagicLink(trimmedEmail);
-    sendSpinner.succeed("Magic link sent!");
+    const response = await initiateDeviceAuth();
+    deviceCode = response.data.device_code;
+    userCode = response.data.user_code;
+    verificationUrl = response.data.verification_url;
+    initSpinner.succeed("Authentication initiated");
   } catch (err) {
-    sendSpinner.fail("Failed to send magic link");
+    initSpinner.fail("Failed to initiate authentication");
     if (err instanceof ApiError) {
       console.error(`  ${chalk.red(err.message)}`);
     }
     process.exit(1);
   }
 
+  // Display instructions
   console.log();
-  console.log(`  Check your inbox at ${chalk.cyan(trimmedEmail)}`);
-  console.log(`  The link expires in ${chalk.yellow("15 minutes")}`);
+  console.log(`  Open ${chalk.cyan(verificationUrl)} and enter code:`);
+  console.log();
+  console.log(`    ${chalk.bold.yellow(userCode)}`);
   console.log();
 
-  // Offer to open browser or paste token
-  const { method } = await inquirer.prompt<{ method: string }>([
-    {
-      type: "list",
-      name: "method",
-      message: "How would you like to verify?",
-      choices: [
-        { name: "Paste the token or URL from the email", value: "paste" },
-        { name: "I'll open the link in my email myself", value: "wait" },
-      ],
-    },
-  ]);
-
-  if (method === "paste") {
-    console.log();
-    console.log(
-      chalk.dim("  Tip: Copy the full URL from the email, or just the token parameter"),
-    );
+  // Try to auto-open browser
+  try {
+    await open(verificationUrl);
+    console.log(chalk.dim("  Browser opened automatically."));
+  } catch {
+    console.log(chalk.dim("  Open the URL above in your browser to continue."));
   }
 
-  // Get token from user
-  const { tokenInput } = await inquirer.prompt<{ tokenInput: string }>([
-    {
-      type: "input",
-      name: "tokenInput",
-      message: "Paste your token or magic link URL:",
-      validate: (input: string) => {
-        if (!input.trim()) return "Token is required";
-        return true;
-      },
-    },
-  ]);
+  console.log();
+  console.log(chalk.dim("  Waiting for authorization..."));
+  console.log();
 
-  const token = extractToken(tokenInput);
+  // Poll for token
+  const pollSpinner = spinner("Waiting for authorization...");
+  const maxAttempts = 180; // 15 minutes / 5 seconds = 180
 
-  // Verify token
-  const verifySpinner = spinner("Verifying...");
-  try {
-    const response = await verifyMagicLink(token);
-    const jwt = response.data?.token;
-    const userEmail = response.data?.user?.email ?? trimmedEmail;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    await sleep(5000);
 
-    if (jwt) {
-      setAuthToken(jwt, userEmail);
-      verifySpinner.succeed("Logged in successfully!");
-      console.log();
-      console.log(`  Welcome, ${chalk.cyan(userEmail)}!`);
-    } else {
-      // New user account created — the response may not include a token in data
-      // Re-verify or prompt user to try again
-      setAuthToken(token, trimmedEmail);
-      verifySpinner.succeed("Account created and logged in!");
-      console.log();
-      console.log(`  Welcome, ${chalk.cyan(trimmedEmail)}!`);
-    }
-  } catch (err) {
-    verifySpinner.fail("Verification failed");
-    if (err instanceof ApiError) {
-      console.error(`  ${chalk.red(err.message)}`);
-      if (err.statusCode === 401) {
-        console.log(chalk.dim("  The link may have expired. Run `lr login` to try again."));
+    try {
+      const result = await pollDeviceToken(deviceCode);
+
+      if (result.status === 202) {
+        // Still pending, continue polling
+        continue;
       }
+
+      if (result.status === 200 && result.data?.token) {
+        const token = result.data.token;
+        const email = result.data.user?.email ?? "";
+        setCliToken(token, email);
+        pollSpinner.succeed("Logged in successfully!");
+        console.log();
+        console.log(`  Welcome, ${chalk.cyan(email || "user")}!`);
+        return;
+      }
+
+      // Error states
+      pollSpinner.fail(result.msg || "Authorization failed");
+      process.exit(1);
+    } catch {
+      // Network errors during polling are non-fatal, keep retrying
+      continue;
     }
-    process.exit(1);
   }
+
+  pollSpinner.fail("Authorization timed out");
+  console.log(
+    chalk.dim("  The code has expired. Run `lr login` to try again.")
+  );
+  process.exit(1);
 }

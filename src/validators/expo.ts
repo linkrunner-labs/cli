@@ -1,187 +1,117 @@
-import { existsSync, readFileSync } from "fs";
-import { basename, join } from "path";
-import type { ValidationResult, ProjectPaths } from "../types/index.js";
+import { join } from "path";
+import type { ValidationResult } from "../types/index.js";
 import { DOC_LINKS, MIN_SDK_VERSIONS } from "../config/constants.js";
 import { validateAndroid } from "./android.js";
 import { validateIos } from "./ios.js";
+import {
+  pass,
+  warn,
+  error,
+  fileExists,
+  readJsonSafe,
+  semverGte,
+  resolveAndroidPaths,
+  resolveIosPaths,
+} from "./helpers.js";
 
-function semverGte(version: string, min: string): boolean {
-  const parse = (v: string) => v.replace(/^[\^~>=<\s]+/, "").split(".").map(Number);
-  const a = parse(version);
-  const b = parse(min);
-  for (let i = 0; i < 3; i++) {
-    const av = a[i] ?? 0;
-    const bv = b[i] ?? 0;
-    if (av > bv) return true;
-    if (av < bv) return false;
-  }
-  return true;
-}
-
-function readJsonSafe(filePath: string): Record<string, unknown> | null {
-  try {
-    const content = readFileSync(filePath, "utf-8");
-    return JSON.parse(content) as Record<string, unknown>;
-  } catch {
-    return null;
-  }
-}
-
-function resolveAndroidPaths(androidDir: string): ProjectPaths {
-  const paths: ProjectPaths = { root: androidDir };
-
-  const manifestCandidates = [
-    join(androidDir, "app", "src", "main", "AndroidManifest.xml"),
-    join(androidDir, "src", "main", "AndroidManifest.xml"),
-  ];
-  for (const m of manifestCandidates) {
-    if (existsSync(m)) { paths.androidManifest = m; break; }
-  }
-
-  const gradleCandidates = [
-    join(androidDir, "app", "build.gradle"),
-    join(androidDir, "app", "build.gradle.kts"),
-    join(androidDir, "build.gradle"),
-    join(androidDir, "build.gradle.kts"),
-  ];
-  for (const g of gradleCandidates) {
-    if (existsSync(g)) { paths.buildGradle = g; break; }
-  }
-
-  const wrapperPath = join(androidDir, "gradle", "wrapper", "gradle-wrapper.properties");
-  if (existsSync(wrapperPath)) paths.gradleWrapper = wrapperPath;
-
-  const settingsCandidates = [
-    join(androidDir, "settings.gradle"),
-    join(androidDir, "settings.gradle.kts"),
-  ];
-  for (const s of settingsCandidates) {
-    if (existsSync(s)) { paths.settingsGradle = s; break; }
-  }
-
-  return paths;
-}
-
-function resolveIosPaths(iosDir: string): ProjectPaths {
-  const paths: ProjectPaths = { root: iosDir };
-
-  const plistCandidates = [
-    join(iosDir, "Runner", "Info.plist"),
-    join(iosDir, "Info.plist"),
-  ];
-  try {
-    const entries = Bun.spawnSync(["ls", iosDir]).stdout.toString().split("\n");
-    for (const entry of entries) {
-      const name = entry.trim();
-      if (name.endsWith(".xcodeproj")) {
-        const appName = basename(name, ".xcodeproj");
-        plistCandidates.unshift(join(iosDir, appName, "Info.plist"));
-      }
-    }
-  } catch { /* ignore */ }
-  for (const p of plistCandidates) {
-    if (existsSync(p)) { paths.infoPlist = p; break; }
-  }
-
-  const podfilePath = join(iosDir, "Podfile");
-  if (existsSync(podfilePath)) paths.podfile = podfilePath;
-
-  try {
-    const entries = Bun.spawnSync(["find", iosDir, "-name", "*.entitlements", "-maxdepth", "3"])
-      .stdout.toString().split("\n").filter(Boolean);
-    if (entries.length > 0 && entries[0]) paths.entitlements = entries[0];
-  } catch { /* ignore */ }
-
-  return paths;
-}
-
-const KNOWN_PLUGIN_KEYS = new Set(["userTrackingPermission", "debug", "disableIdfa"]);
+const KNOWN_PLUGIN_KEYS = new Set([
+  "userTrackingPermission",
+  "debug",
+  "disableIdfa",
+]);
 
 export function validateExpo(projectRoot: string): ValidationResult[] {
   const results: ValidationResult[] = [];
 
   const packageJsonPath = join(projectRoot, "package.json");
-  const pkg = existsSync(packageJsonPath) ? readJsonSafe(packageJsonPath) : null;
+  const pkg = fileExists(packageJsonPath)
+    ? readJsonSafe(packageJsonPath)
+    : null;
   const deps = pkg?.dependencies as Record<string, string> | undefined;
   const devDeps = pkg?.devDependencies as Record<string, string> | undefined;
 
   // Check 1: rn-linkrunner in package.json
-  const rnLinkrunnerVersion = deps?.["rn-linkrunner"] ?? devDeps?.["rn-linkrunner"];
+  const rnLinkrunnerVersion =
+    deps?.["rn-linkrunner"] ?? devDeps?.["rn-linkrunner"];
 
   if (!rnLinkrunnerVersion) {
-    results.push({
-      id: "expo-rn-sdk-installed",
-      name: "rn-linkrunner SDK installed",
-      status: "error",
-      severity: "error",
-      message: "rn-linkrunner package not found in package.json",
-      fix: "Run: npm install rn-linkrunner",
-      autoFixable: true,
-      docsUrl: DOC_LINKS.expo,
-    });
+    results.push(
+      error(
+        "expo-rn-sdk-installed",
+        "rn-linkrunner SDK installed",
+        "rn-linkrunner package not found in package.json",
+        {
+          fix: "Run: npm install rn-linkrunner",
+          autoFixable: true,
+          docsUrl: DOC_LINKS.expo,
+        },
+      ),
+    );
   } else {
-    results.push({
-      id: "expo-rn-sdk-installed",
-      name: "rn-linkrunner SDK installed",
-      status: "pass",
-      severity: "error",
-      message: "rn-linkrunner package found in package.json",
-      autoFixable: false,
-    });
+    results.push(
+      pass(
+        "expo-rn-sdk-installed",
+        "rn-linkrunner SDK installed",
+        "rn-linkrunner package found in package.json",
+      ),
+    );
 
     // SDK version check
     const cleanVersion = rnLinkrunnerVersion.replace(/^[\^~>=<\s]+/, "");
     if (!semverGte(cleanVersion, MIN_SDK_VERSIONS["react-native"])) {
-      results.push({
-        id: "expo-rn-sdk-version",
-        name: "rn-linkrunner SDK version",
-        status: "warn",
-        severity: "warn",
-        message: `rn-linkrunner version ${cleanVersion} is below minimum recommended ${MIN_SDK_VERSIONS["react-native"]}`,
-        fix: "Run: npm install rn-linkrunner@latest",
-        autoFixable: true,
-        docsUrl: DOC_LINKS.expo,
-      });
+      results.push(
+        warn(
+          "expo-rn-sdk-version",
+          "rn-linkrunner SDK version",
+          `rn-linkrunner version ${cleanVersion} is below minimum recommended ${MIN_SDK_VERSIONS["react-native"]}`,
+          {
+            fix: "Run: npm install rn-linkrunner@latest",
+            autoFixable: true,
+            docsUrl: DOC_LINKS.expo,
+          },
+        ),
+      );
     } else {
-      results.push({
-        id: "expo-rn-sdk-version",
-        name: "rn-linkrunner SDK version",
-        status: "pass",
-        severity: "warn",
-        message: `rn-linkrunner version ${cleanVersion} is up to date`,
-        autoFixable: false,
-      });
+      results.push(
+        pass(
+          "expo-rn-sdk-version",
+          "rn-linkrunner SDK version",
+          `rn-linkrunner version ${cleanVersion} is up to date`,
+        ),
+      );
     }
   }
 
   // Check 2: expo-linkrunner in package.json
-  const expoLinkrunnerVersion = deps?.["expo-linkrunner"] ?? devDeps?.["expo-linkrunner"];
+  const expoLinkrunnerVersion =
+    deps?.["expo-linkrunner"] ?? devDeps?.["expo-linkrunner"];
 
   if (!expoLinkrunnerVersion) {
-    results.push({
-      id: "expo-plugin-installed",
-      name: "expo-linkrunner plugin installed",
-      status: "error",
-      severity: "error",
-      message: "expo-linkrunner package not found in package.json",
-      fix: "Run: npx expo install expo-linkrunner",
-      autoFixable: true,
-      docsUrl: DOC_LINKS.expo,
-    });
+    results.push(
+      error(
+        "expo-plugin-installed",
+        "expo-linkrunner plugin installed",
+        "expo-linkrunner package not found in package.json",
+        {
+          fix: "Run: npx expo install expo-linkrunner",
+          autoFixable: true,
+          docsUrl: DOC_LINKS.expo,
+        },
+      ),
+    );
   } else {
-    results.push({
-      id: "expo-plugin-installed",
-      name: "expo-linkrunner plugin installed",
-      status: "pass",
-      severity: "error",
-      message: "expo-linkrunner package found in package.json",
-      autoFixable: false,
-    });
+    results.push(
+      pass(
+        "expo-plugin-installed",
+        "expo-linkrunner plugin installed",
+        "expo-linkrunner package found in package.json",
+      ),
+    );
   }
 
   // Check 3: expo-linkrunner in app.json plugins
   const appJsonPath = join(projectRoot, "app.json");
-  const appJson = existsSync(appJsonPath) ? readJsonSafe(appJsonPath) : null;
+  const appJson = fileExists(appJsonPath) ? readJsonSafe(appJsonPath) : null;
   const expoConfig = appJson?.expo as Record<string, unknown> | undefined;
   const plugins = expoConfig?.plugins as unknown[] | undefined;
 
@@ -195,51 +125,53 @@ export function validateExpo(projectRoot: string): ValidationResult[] {
   }
 
   if (!pluginEntry) {
-    results.push({
-      id: "expo-plugin-configured",
-      name: "expo-linkrunner in app.json plugins",
-      status: "error",
-      severity: "error",
-      message: "expo-linkrunner not found in expo.plugins array in app.json",
-      fix: 'Add ["expo-linkrunner", {}] to the plugins array in app.json',
-      autoFixable: false,
-      docsUrl: DOC_LINKS.expo,
-    });
+    results.push(
+      error(
+        "expo-plugin-configured",
+        "expo-linkrunner in app.json plugins",
+        "expo-linkrunner not found in expo.plugins array in app.json",
+        {
+          fix: 'Add ["expo-linkrunner", {}] to the plugins array in app.json',
+          docsUrl: DOC_LINKS.expo,
+        },
+      ),
+    );
   } else {
-    results.push({
-      id: "expo-plugin-configured",
-      name: "expo-linkrunner in app.json plugins",
-      status: "pass",
-      severity: "error",
-      message: "expo-linkrunner found in app.json plugins",
-      autoFixable: false,
-    });
+    results.push(
+      pass(
+        "expo-plugin-configured",
+        "expo-linkrunner in app.json plugins",
+        "expo-linkrunner found in app.json plugins",
+      ),
+    );
 
     // Check 4: Plugin config has recognized keys
     if (Array.isArray(pluginEntry) && pluginEntry.length >= 2) {
       const config = pluginEntry[1] as Record<string, unknown> | undefined;
       if (config && typeof config === "object") {
-        const unknownKeys = Object.keys(config).filter((k) => !KNOWN_PLUGIN_KEYS.has(k));
+        const unknownKeys = Object.keys(config).filter(
+          (k) => !KNOWN_PLUGIN_KEYS.has(k),
+        );
         if (unknownKeys.length > 0) {
-          results.push({
-            id: "expo-plugin-config",
-            name: "expo-linkrunner plugin config",
-            status: "warn",
-            severity: "warn",
-            message: `Unknown plugin config keys: ${unknownKeys.join(", ")}. Known keys: ${[...KNOWN_PLUGIN_KEYS].join(", ")}`,
-            fix: "Check expo-linkrunner docs for valid configuration options",
-            autoFixable: false,
-            docsUrl: DOC_LINKS.expo,
-          });
+          results.push(
+            warn(
+              "expo-plugin-config",
+              "expo-linkrunner plugin config",
+              `Unknown plugin config keys: ${unknownKeys.join(", ")}. Known keys: ${[...KNOWN_PLUGIN_KEYS].join(", ")}`,
+              {
+                fix: "Check expo-linkrunner docs for valid configuration options",
+                docsUrl: DOC_LINKS.expo,
+              },
+            ),
+          );
         } else {
-          results.push({
-            id: "expo-plugin-config",
-            name: "expo-linkrunner plugin config",
-            status: "pass",
-            severity: "warn",
-            message: "Plugin configuration keys are valid",
-            autoFixable: false,
-          });
+          results.push(
+            pass(
+              "expo-plugin-config",
+              "expo-linkrunner plugin config",
+              "Plugin configuration keys are valid",
+            ),
+          );
         }
       }
     }
@@ -247,7 +179,7 @@ export function validateExpo(projectRoot: string): ValidationResult[] {
 
   // Inherited: Android checks (only if android/ exists, Expo managed may not have it)
   const androidDir = join(projectRoot, "android");
-  if (existsSync(androidDir)) {
+  if (fileExists(androidDir)) {
     const androidPaths = resolveAndroidPaths(androidDir);
     const androidResults = validateAndroid(androidPaths, "expo");
     results.push(...androidResults);
@@ -255,7 +187,7 @@ export function validateExpo(projectRoot: string): ValidationResult[] {
 
   // Inherited: iOS checks (only if ios/ exists)
   const iosDir = join(projectRoot, "ios");
-  if (existsSync(iosDir)) {
+  if (fileExists(iosDir)) {
     const iosPaths = resolveIosPaths(iosDir);
     const iosResults = validateIos(iosPaths, "expo");
     results.push(...iosResults);

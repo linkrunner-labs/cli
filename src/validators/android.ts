@@ -1,6 +1,10 @@
 import { readFileSync, writeFileSync } from "fs";
 import { parseXml, parseGradle } from "../utils/file-parser.js";
-import type { ValidationResult, ProjectPaths, ProjectType } from "../types/index.js";
+import type {
+  ValidationResult,
+  ProjectPaths,
+  ProjectType,
+} from "../types/index.js";
 
 const DOCS_URL = "https://docs.linkrunner.io/sdks/android/getting-started";
 
@@ -40,7 +44,8 @@ function checkMinSdkVersion(paths: ProjectPaths): ValidationResult {
       name,
       status: "pass",
       severity: "error",
-      message: "minSdkVersion is set via variable reference (unable to validate exact value)",
+      message:
+        "minSdkVersion is set via variable reference (unable to validate exact value)",
       autoFixable: false,
       docsUrl: DOCS_URL,
     };
@@ -74,7 +79,7 @@ function checkPermission(
   paths: ProjectPaths,
   permission: string,
   id: string,
-  label: string,
+  label: string
 ): ValidationResult {
   if (!paths.androidManifest) {
     return {
@@ -157,7 +162,9 @@ function checkBackupRules(paths: ProjectPaths): ValidationResult {
   }
 
   const manifest = xml.manifest as Record<string, unknown> | undefined;
-  const application = manifest?.application as Record<string, unknown> | undefined;
+  const application = manifest?.application as
+    | Record<string, unknown>
+    | undefined;
 
   const hasFullBackup = !!application?.["@_android:fullBackupContent"];
   const hasDataExtraction = !!application?.["@_android:dataExtractionRules"];
@@ -179,7 +186,8 @@ function checkBackupRules(paths: ProjectPaths): ValidationResult {
     name,
     status: "warn",
     severity: "warn",
-    message: "Backup rules are not configured — Linkrunner install ID may persist across reinstalls",
+    message:
+      "Backup rules are not configured — Linkrunner install ID may persist across reinstalls",
     fix: 'Add android:fullBackupContent="@xml/linkrunner_backup_descriptor" and android:dataExtractionRules="@xml/linkrunner_backup_rules" to <application> in AndroidManifest.xml',
     autoFixable: true,
     docsUrl: DOCS_URL,
@@ -224,7 +232,8 @@ function checkGradleVersion(paths: ProjectPaths): ValidationResult {
       name,
       status: "warn",
       severity: "warn",
-      message: "Could not determine Gradle version from gradle-wrapper.properties",
+      message:
+        "Could not determine Gradle version from gradle-wrapper.properties",
       autoFixable: false,
       docsUrl: DOCS_URL,
     };
@@ -255,7 +264,10 @@ function checkGradleVersion(paths: ProjectPaths): ValidationResult {
   };
 }
 
-function checkMavenCentral(paths: ProjectPaths, projectType: ProjectType): ValidationResult {
+function checkMavenCentral(
+  paths: ProjectPaths,
+  projectType: ProjectType
+): ValidationResult {
   const id = "android-maven-central";
   const name = "Maven Central repository";
 
@@ -328,10 +340,10 @@ function checkMavenCentral(paths: ProjectPaths, projectType: ProjectType): Valid
 export function fixMinSdkVersion(paths: ProjectPaths): boolean {
   if (!paths.buildGradle) return false;
   try {
-    let content = readFileSync(paths.buildGradle, "utf-8");
+    const content = readFileSync(paths.buildGradle, "utf-8");
     const replaced = content.replace(
       /(minSdk(?:Version)?\s*[=:]\s*)\d+/,
-      "$121",
+      "$121"
     );
     if (replaced === content) return false;
     writeFileSync(paths.buildGradle, replaced, "utf-8");
@@ -360,12 +372,20 @@ function addPermission(paths: ProjectPaths, permission: string): boolean {
     // Insert before <application
     const appIndex = content.indexOf("<application");
     if (appIndex !== -1) {
-      content = content.slice(0, appIndex) + permissionLine + "\n" + content.slice(appIndex);
+      content =
+        content.slice(0, appIndex) +
+        permissionLine +
+        "\n" +
+        content.slice(appIndex);
     } else {
       // Insert before closing </manifest>
       const closeIndex = content.lastIndexOf("</manifest>");
       if (closeIndex === -1) return false;
-      content = content.slice(0, closeIndex) + permissionLine + "\n" + content.slice(closeIndex);
+      content =
+        content.slice(0, closeIndex) +
+        permissionLine +
+        "\n" +
+        content.slice(closeIndex);
     }
 
     writeFileSync(paths.androidManifest, content, "utf-8");
@@ -431,12 +451,29 @@ export function fixMavenCentral(paths: ProjectPaths): boolean {
 
 // --- Main export ---
 
-export function validateAndroid(paths: ProjectPaths, projectType: ProjectType): ValidationResult[] {
+export function validateAndroid(
+  paths: ProjectPaths,
+  projectType: ProjectType
+): ValidationResult[] {
   const results: ValidationResult[] = [];
 
   results.push(checkMinSdkVersion(paths));
-  results.push(checkPermission(paths, "android.permission.INTERNET", "android-internet-permission", "INTERNET"));
-  results.push(checkPermission(paths, "android.permission.ACCESS_NETWORK_STATE", "android-network-state-permission", "ACCESS_NETWORK_STATE"));
+  results.push(
+    checkPermission(
+      paths,
+      "android.permission.INTERNET",
+      "android-internet-permission",
+      "INTERNET"
+    )
+  );
+  results.push(
+    checkPermission(
+      paths,
+      "android.permission.ACCESS_NETWORK_STATE",
+      "android-network-state-permission",
+      "ACCESS_NETWORK_STATE"
+    )
+  );
   results.push(checkBackupRules(paths));
   results.push(checkGradleVersion(paths));
   results.push(checkMavenCentral(paths, projectType));

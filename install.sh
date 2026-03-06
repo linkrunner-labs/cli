@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-REPO="linkrunner-labs/cli"
+REPO="linkrunner-io/lr"
 INSTALL_DIR="/usr/local/bin"
 FALLBACK_DIR="$HOME/.local/bin"
 
