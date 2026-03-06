@@ -7,7 +7,7 @@ const program = new Command();
 
 program
   .name("lr")
-  .version("0.1.0")
+  .version("0.1.1")
   .description("Linkrunner CLI - SDK integration, validation, and debugging")
   .option("--debug", "Enable debug logging")
   .option("--env <environment>", "Override environment for this command");

@@ -1,6 +1,6 @@
 {
   "name": "linkrunner-cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Linkrunner CLI for SDK integration, validation, and debugging",
   "bin": {
     "lr": "./bin/lr.js"
