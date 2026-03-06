@@ -1,0 +1,35 @@
+{
+  "name": "linkrunner-cli",
+  "version": "0.1.0",
+  "description": "Linkrunner CLI for SDK integration, validation, and debugging",
+  "bin": {
+    "lr": "./bin/lr.js"
+  },
+  "scripts": {
+    "build": "bun build src/index.ts --outdir dist --target bun",
+    "build:binary": "bun run scripts/build.ts",
+    "build:binary:local": "bun build src/index.ts --compile --outfile dist/lr",
+    "dev": "bun run src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "author": "Darshil Rathod <darshilrathod0@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "commander": "^12.1.0",
+    "conf": "^13.0.1",
+    "fast-xml-parser": "^4.5.0",
+    "inquirer": "^12.1.0",
+    "open": "^10.1.0",
+    "ora": "^8.1.1",
+    "plist": "^3.1.0",
+    "yaml": "^2.6.1",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/plist": "^3.0.5",
+    "bun-types": "^1.1.0",
+    "typescript": "^5.7.0"
+  }
+}
