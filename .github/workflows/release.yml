@@ -1,0 +1,165 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  version-bump:
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    outputs:
+      new_version: ${{ steps.bump.outputs.new_version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Detect bump type and calculate version
+        id: bump
+        run: |
+          COMMIT_MSG="${{ github.event.head_commit.message }}"
+          CURRENT_VERSION=$(node -e "console.log(require('./package.json').version)")
+
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+
+          if echo "$COMMIT_MSG" | grep -q '\[major\]'; then
+            MAJOR=$((MAJOR + 1))
+            MINOR=0
+            PATCH=0
+          elif echo "$COMMIT_MSG" | grep -q '\[minor\]'; then
+            MINOR=$((MINOR + 1))
+            PATCH=0
+          else
+            PATCH=$((PATCH + 1))
+          fi
+
+          NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+          echo "new_version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+          echo "Bumping $CURRENT_VERSION -> $NEW_VERSION"
+
+      - name: Update version in files
+        run: |
+          VERSION=${{ steps.bump.outputs.new_version }}
+
+          # package.json
+          node -e "
+            const pkg = require('./package.json');
+            pkg.version = '$VERSION';
+            require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+          "
+
+          # src/index.ts line 8: .version("x.y.z")
+          sed -i "s/\.version(\"[^\"]*\")/\.version(\"$VERSION\")/" src/index.ts
+
+          # src/config/constants.ts line 3: CLI_VERSION = "x.y.z"
+          sed -i "s/CLI_VERSION = \"[^\"]*\"/CLI_VERSION = \"$VERSION\"/" src/config/constants.ts
+
+      - name: Commit and tag
+        run: |
+          VERSION=${{ steps.bump.outputs.new_version }}
+          git add -A
+          git commit -m "chore: release v${VERSION} [skip ci]"
+          git tag "v${VERSION}"
+          git push origin main --tags
+
+  build:
+    needs: version-bump
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - runner: macos-latest
+            target: bun-darwin-arm64
+            asset: lr-darwin-arm64
+          - runner: macos-latest
+            target: bun-darwin-x64
+            asset: lr-darwin-x64
+          - runner: ubuntu-latest
+            target: bun-linux-x64
+            asset: lr-linux-x64
+          - runner: ubuntu-latest
+            target: bun-linux-arm64
+            asset: lr-linux-arm64
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: v${{ needs.version-bump.outputs.new_version }}
+
+      - uses: oven-sh/setup-bun@v2
+
+      - run: bun install --frozen-lockfile
+
+      - name: Build binary
+        run: bun build src/index.ts --compile --outfile dist/${{ matrix.asset }} --target ${{ matrix.target }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset }}
+          path: dist/${{ matrix.asset }}
+
+  npm-publish:
+    needs: [version-bump, build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: v${{ needs.version-bump.outputs.new_version }}
+
+      - uses: oven-sh/setup-bun@v2
+
+      - run: bun install --frozen-lockfile
+
+      - run: bun run build
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org
+
+      - run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  github-release:
+    needs: [version-bump, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Generate checksums
+        run: |
+          cd artifacts
+          sha256sum */lr-* > checksums.txt
+          # Normalize paths to just filenames
+          sed -i 's|[^ ]*/||' checksums.txt
+          cat checksums.txt
+
+      - name: Prepare release files
+        run: |
+          mkdir release
+          cp artifacts/lr-darwin-arm64/lr-darwin-arm64 release/
+          cp artifacts/lr-darwin-x64/lr-darwin-x64 release/
+          cp artifacts/lr-linux-x64/lr-linux-x64 release/
+          cp artifacts/lr-linux-arm64/lr-linux-arm64 release/
+          cp artifacts/checksums.txt release/
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.version-bump.outputs.new_version }}
+          generate_release_notes: true
+          files: release/*
