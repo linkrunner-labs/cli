@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "fs";
 import { basename, join } from "path";
 import type { ValidationResult, ProjectPaths } from "../types/index.js";
+import { spawn } from "../utils/spawn.js";
 
 // --- ValidationResult constructors ---
 
@@ -162,7 +163,7 @@ export function resolveIosPaths(
     join(iosDir, "Info.plist"),
   ];
   try {
-    const entries = Bun.spawnSync(["ls", iosDir]).stdout.toString().split("\n");
+    const entries = spawn(["ls", iosDir]).stdout.toString().split("\n");
     for (const entry of entries) {
       const name = entry.trim();
       if (name.endsWith(".xcodeproj")) {
@@ -184,7 +185,7 @@ export function resolveIosPaths(
   if (existsSync(podfilePath)) paths.podfile = podfilePath;
 
   try {
-    const entries = Bun.spawnSync([
+    const entries = spawn([
       "find",
       iosDir,
       "-name",

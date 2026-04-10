@@ -26,6 +26,7 @@ import {
   error as logError,
 } from "../utils/output.js";
 import { PROJECT_TYPES, type ProjectType } from "../types/index.js";
+import { spawn } from "../utils/spawn.js";
 
 // --- Step 1: Detect project type ---
 
@@ -374,10 +375,9 @@ async function installSDK(projectType: ProjectType): Promise<void> {
 
     for (const cmd of commands) {
       const args = cmd.split(" ").filter(Boolean);
-      const result = Bun.spawnSync(args, {
+      const result = spawn(args, {
         cwd: process.cwd(),
-        stdout: "pipe",
-        stderr: "pipe",
+        stdio: ["pipe", "pipe", "pipe"],
       });
 
       if (result.exitCode !== 0) {
@@ -452,7 +452,7 @@ function getConfigModifications(projectType: ProjectType): FileModification[] {
       // Find Info.plist
       const plistCandidates = [join(iosDir, "Runner", "Info.plist")];
       try {
-        const entries = Bun.spawnSync(["ls", iosDir])
+        const entries = spawn(["ls", iosDir])
           .stdout.toString()
           .split("\n");
         for (const entry of entries) {

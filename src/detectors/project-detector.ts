@@ -6,6 +6,7 @@ import type {
   ProjectType,
 } from "../types/index.js";
 import { debug } from "../utils/debug.js";
+import { spawn } from "../utils/spawn.js";
 
 const MAX_SEARCH_DEPTH = 10;
 
@@ -106,7 +107,7 @@ function resolveIosPaths(root: string): Partial<ProjectPaths> {
   ];
   // Also search for *.xcodeproj dirs to find the app name
   try {
-    const entries = Bun.spawnSync(["ls", iosDir]).stdout.toString().split("\n");
+    const entries = spawn(["ls", iosDir]).stdout.toString().split("\n");
     for (const entry of entries) {
       const name = entry.trim();
       if (name.endsWith(".xcodeproj")) {
@@ -131,7 +132,7 @@ function resolveIosPaths(root: string): Partial<ProjectPaths> {
 
   // Find entitlements
   try {
-    const entries = Bun.spawnSync([
+    const entries = spawn([
       "find",
       iosDir,
       "-name",
@@ -298,7 +299,7 @@ function detectType(
 
   // Check for iOS native project
   try {
-    const entries = Bun.spawnSync(["ls", root]).stdout.toString().split("\n");
+    const entries = spawn(["ls", root]).stdout.toString().split("\n");
     const hasXcodeproj = entries.some((e) => e.trim().endsWith(".xcodeproj"));
     const hasXcworkspace = entries.some((e) =>
       e.trim().endsWith(".xcworkspace")

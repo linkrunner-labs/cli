@@ -7,6 +7,7 @@ import {
 } from "../generators/event-code.js";
 import { header, info, pass, error as logError } from "../utils/output.js";
 import { PROJECT_TYPES, type ProjectType } from "../types/index.js";
+import { spawnWithInput } from "../utils/spawn.js";
 
 type EventType = "custom" | "payment" | "signup";
 
@@ -236,9 +237,7 @@ function copyToClipboard(text: string): boolean {
       cmd = ["xclip", "-selection", "clipboard"];
     }
 
-    const result = Bun.spawnSync(cmd, {
-      stdin: Buffer.from(text),
-    });
+    const result = spawnWithInput(cmd, Buffer.from(text));
 
     return result.exitCode === 0;
   } catch {

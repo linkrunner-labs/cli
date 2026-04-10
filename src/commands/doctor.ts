@@ -32,6 +32,7 @@ import { validateCode } from "../validators/code.js";
 import { analyzeProject } from "../llm/analyzer.js";
 import { parsePlist, parseGradle } from "../utils/file-parser.js";
 import * as output from "../utils/output.js";
+import { spawn } from "../utils/spawn.js";
 
 // --- Fix registry ---
 
@@ -187,7 +188,7 @@ function getCurrentValue(
 
 function runShellCommand(command: string, cwd: string): boolean {
   try {
-    const result = Bun.spawnSync(["sh", "-c", command], { cwd });
+    const result = spawn(["sh", "-c", command], { cwd });
     return result.exitCode === 0;
   } catch {
     return false;
