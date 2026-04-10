@@ -64,14 +64,14 @@ interface VerifyCliTokenResponse {
 export async function initiateDeviceAuth(): Promise<
   ApiResponse<DeviceAuthResponse>
 > {
-  return apiPost<DeviceAuthResponse>("/cli/auth/device");
+  return apiPost<DeviceAuthResponse>("/api/cli/auth/device");
 }
 
 export async function pollDeviceToken(
   deviceCode: string
 ): Promise<{ status: number; data: DeviceTokenResponse; msg: string }> {
   const baseUrl = API_BASE_URLS[getEnvironment()];
-  const res = await fetch(`${baseUrl}/api/cli/auth/token`, {
+  const res = await fetch(`${baseUrl}/api/cli/auth/device/token`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ device_code: deviceCode }),
