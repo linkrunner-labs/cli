@@ -3,9 +3,18 @@ import inquirer from "inquirer";
 import { detectProjectType } from "../detectors/project-detector.js";
 import {
   generateEventCode,
+  PAYMENT_STATUSES,
+  PAYMENT_TYPES,
   type EventCodeParams,
+  type PaymentStatus,
+  type PaymentType,
 } from "../generators/event-code.js";
 import { header, info, pass, error as logError } from "../utils/output.js";
+import {
+  EVENT_VALUE_RULES,
+  parseEventValue,
+  type EventParams,
+} from "../utils/event-value.js";
 import { PROJECT_TYPES, type ProjectType } from "../types/index.js";
 
 type EventType = "custom" | "payment" | "signup";
@@ -76,19 +85,23 @@ async function resolveEventType(typeFlag?: string): Promise<EventType> {
   return eventType;
 }
 
-async function collectProperties(): Promise<Record<string, string>> {
-  const properties: Record<string, string> = {};
+async function collectProperties(): Promise<EventParams> {
+  const properties: EventParams = {};
 
   const { addFirst } = await inquirer.prompt<{ addFirst: boolean }>([
     {
       type: "confirm",
       name: "addFirst",
-      message: "Add a property?",
+      message: "Add an event parameter?",
       default: false,
     },
   ]);
 
   if (!addFirst) return properties;
+
+  for (const rule of EVENT_VALUE_RULES) {
+    console.log(`  ${chalk.dim(rule)}`);
+  }
 
   let adding = true;
   while (adding) {
@@ -99,25 +112,25 @@ async function collectProperties(): Promise<Record<string, string>> {
       {
         type: "input",
         name: "key",
-        message: "Property key:",
+        message: "Parameter key:",
         validate: (input: string) => (input.trim() ? true : "Key is required"),
       },
       {
         type: "input",
         name: "value",
-        message: "Property value:",
+        message: "Parameter value (number, true/false, or text):",
         validate: (input: string) =>
           input.trim() ? true : "Value is required",
       },
     ]);
 
-    properties[key.trim()] = value.trim();
+    properties[key.trim()] = parseEventValue(value);
 
     const { addMore } = await inquirer.prompt<{ addMore: boolean }>([
       {
         type: "confirm",
         name: "addMore",
-        message: "Add another property?",
+        message: "Add another event parameter?",
         default: false,
       },
     ]);
@@ -147,12 +160,10 @@ async function collectCustomEventParams(): Promise<EventCodeParams> {
   };
 }
 
-async function collectPaymentParams(): Promise<EventCodeParams> {
-  const { amount, currency, transactionId } = await inquirer.prompt<{
-    amount: number;
-    currency: string;
-    transactionId: string;
-  }>([
+async function collectPaymentParams(
+  platform: ProjectType
+): Promise<EventCodeParams> {
+  const { amount } = await inquirer.prompt<{ amount: number }>([
     {
       type: "number",
       name: "amount",
@@ -162,27 +173,75 @@ async function collectPaymentParams(): Promise<EventCodeParams> {
         return true;
       },
     },
+  ]);
+
+  // The Web SDK records a payment as lr.track('purchase', { amount, ... }).
+  if (platform === "web") {
+    info("Add currency or other details as event parameters.");
+    const properties = await collectProperties();
+    return { type: "payment", params: { amount, properties } };
+  }
+
+  const { userId, paymentId, paymentType, status } = await inquirer.prompt<{
+    userId: string;
+    paymentId: string;
+    paymentType: PaymentType | "";
+    status: PaymentStatus | "";
+  }>([
     {
       type: "input",
-      name: "currency",
-      message: "Currency code:",
-      default: "USD",
+      name: "userId",
+      message: "User ID:",
+      validate: (input: string) =>
+        input.trim() ? true : "User ID is required",
     },
     {
       type: "input",
-      name: "transactionId",
-      message: "Transaction ID (optional, press enter to skip):",
+      name: "paymentId",
+      message: "Payment ID (unique, used to remove duplicates):",
+      validate: (input: string) =>
+        input.trim() ? true : "Payment ID is required",
+    },
+    {
+      type: "list",
+      name: "paymentType",
+      message: "Payment type:",
+      choices: [
+        { name: "DEFAULT (leave out)", value: "" },
+        ...PAYMENT_TYPES.map((t) => ({ name: t, value: t })),
+      ],
+    },
+    {
+      type: "list",
+      name: "status",
+      message: "Payment status:",
+      choices: [
+        { name: "PAYMENT_COMPLETED (default, leave out)", value: "" },
+        ...PAYMENT_STATUSES.filter((s) => s !== "PAYMENT_COMPLETED").map(
+          (s) => ({ name: s, value: s })
+        ),
+      ],
     },
   ]);
 
-  const properties = await collectProperties();
+  let properties: EventParams = {};
+  if (platform === "capacitor") {
+    info("The Capacitor SDK's capturePayment does not accept eventData.");
+  } else {
+    info(
+      "Event parameters are sent as eventData. Add currency here if needed."
+    );
+    properties = await collectProperties();
+  }
 
   return {
     type: "payment",
     params: {
       amount,
-      currency: currency.trim().toUpperCase(),
-      transactionId: transactionId.trim() || undefined,
+      userId: userId.trim(),
+      paymentId: paymentId.trim(),
+      type: paymentType || undefined,
+      status: status || undefined,
       properties: Object.keys(properties).length > 0 ? properties : undefined,
     },
   };
@@ -258,14 +317,7 @@ export async function eventsAddCommand(options: {
   // Step 2: Resolve event type
   const eventType = await resolveEventType(options.type);
 
-  // Step 3: Check web + signup limitation
-  if (platform === "web" && eventType === "signup") {
-    info("Web SDK does not have a signup method.");
-    info("Use trackEvent for custom events instead.");
-    return;
-  }
-
-  // Step 4: Collect event-specific parameters
+  // Step 3: Collect event-specific parameters
   let eventParams: EventCodeParams;
 
   switch (eventType) {
@@ -273,17 +325,17 @@ export async function eventsAddCommand(options: {
       eventParams = await collectCustomEventParams();
       break;
     case "payment":
-      eventParams = await collectPaymentParams();
+      eventParams = await collectPaymentParams(platform);
       break;
     case "signup":
       eventParams = await collectSignupParams();
       break;
   }
 
-  // Step 5: Generate code
+  // Step 4: Generate code
   const code = generateEventCode(platform, eventParams);
 
-  // Step 6: Display generated code
+  // Step 5: Display generated code
   header("Generated Code");
   console.log(
     code
@@ -293,15 +345,15 @@ export async function eventsAddCommand(options: {
   );
   console.log();
 
-  // Step 7: Try LLM auto-insertion
+  // Step 6: Try LLM auto-insertion
   let inserted = false;
   try {
-    inserted = await tryEventAutoInsert(platform, eventType);
+    inserted = await tryEventAutoInsert(platform, eventType, code);
   } catch {
     // LLM unavailable, fall through to clipboard
   }
 
-  // Step 8: Copy to clipboard (skip if code was already inserted)
+  // Step 7: Copy to clipboard (skip if code was already inserted)
   if (!inserted) {
     const { shouldCopy } = await inquirer.prompt<{ shouldCopy: boolean }>([
       {
@@ -334,7 +386,8 @@ const EVENT_TYPE_TO_CODE_TYPE: Record<
 
 async function tryEventAutoInsert(
   platform: ProjectType,
-  eventType: EventType
+  eventType: EventType,
+  code: string
 ): Promise<boolean> {
   const { autoInsert } = await inquirer.prompt<{ autoInsert: boolean }>([
     {
@@ -361,9 +414,17 @@ async function tryEventAutoInsert(
     return false;
   }
 
+  // The LLM only picks the place. Insert the snippet generated above, which
+  // matches the SDK docs, using the indentation the LLM suggested.
+  const indent = insertionPoint.code.match(/^[ \t]*/)?.[0] ?? "";
+  const indentedCode = code
+    .split("\n")
+    .map((line) => (line ? indent + line : line))
+    .join("\n");
+
   return await promptAndInsertCode(
     process.cwd(),
-    insertionPoint,
+    { ...insertionPoint, code: indentedCode },
     `${eventType} event`
   );
 }
