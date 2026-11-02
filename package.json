@@ -17,12 +17,12 @@
     "dev:login": "bun run src/index.ts login",
     "link:local": "bun link",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint src/",
-    "lint:fix": "eslint src/ --fix",
+    "lint": "oxlint src/",
+    "lint:fix": "oxlint src/ --fix",
     "format": "prettier --write 'src/**/*.ts'",
     "test": "vitest run",
     "test:watch": "vitest",
-    "check": "tsc --noEmit && eslint src/"
+    "check": "tsc --noEmit && oxlint src/"
   },
   "author": "Darshil Rathod <darshilrathod0@gmail.com>",
   "license": "MIT",
@@ -39,15 +39,12 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
-    "@eslint/js": "^10.0.1",
     "@types/node": "^22.10.0",
     "@types/plist": "^3.0.5",
     "bun-types": "^1.1.0",
-    "eslint": "^10.0.2",
-    "eslint-config-prettier": "^10.1.8",
+    "oxlint": "^1.90.0",
     "prettier": "^3.8.1",
     "typescript": "^5.7.0",
-    "typescript-eslint": "^8.56.1",
     "vitest": "^4.0.18"
   }
 }
