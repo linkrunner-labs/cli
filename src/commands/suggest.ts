@@ -137,7 +137,7 @@ interface FeatureDef {
   example: Record<ProjectType, string>;
 }
 
-const FEATURES: FeatureDef[] = [
+export const FEATURES: FeatureDef[] = [
   {
     key: "init",
     name: "init()",
@@ -187,7 +187,10 @@ const FEATURES: FeatureDef[] = [
         /LinkRunner\.signup\s*\(/,
       ],
       ios: [/LinkrunnerSDK\.shared\.signup\s*\(/],
-      web: [/LinkrunnerSDK\.signup\s*\(/],
+      web: [
+        /LinkrunnerSDK\.signup\s*\(/,
+        /\blr\.track\s*\(\s*['"`]signup['"`]/,
+      ],
     },
     example: {
       flutter: "await LinkRunner().signup(userId: 'USER_ID');",
@@ -196,7 +199,7 @@ const FEATURES: FeatureDef[] = [
       capacitor: "await linkrunner.signup({ userId: 'USER_ID' });",
       android: 'LinkRunner.getInstance().signup("USER_ID")',
       ios: 'try await LinkrunnerSDK.shared.signup(userId: "USER_ID")',
-      web: "LinkrunnerSDK.signup({ userId: 'USER_ID' });",
+      web: "lr.identify('USER_ID'); lr.track('signup', { name: 'User Name' });",
     },
   },
   {
@@ -250,18 +253,24 @@ const FEATURES: FeatureDef[] = [
         /LinkRunner\.trackEvent\s*\(/,
       ],
       ios: [/LinkrunnerSDK\.shared\.trackEvent\s*\(/],
-      web: [/LinkrunnerSDK\.trackEvent\s*\(/],
+      web: [
+        /LinkrunnerSDK\.trackEvent\s*\(/,
+        // lr.track calls other than the signup and purchase events
+        /\blr\.track\s*\((?!\s*['"`](?:signup|purchase)['"`])/,
+      ],
     },
     example: {
-      flutter: "await LinkRunner().trackEvent(name: 'event_name', data: {});",
+      flutter:
+        "await LinkRunner().trackEvent(eventName: 'event_name', eventData: {'plan': 'gold', 'amount': 499});",
       "react-native":
-        "await linkrunner.trackEvent({ name: 'event_name', data: {} });",
-      expo: "await linkrunner.trackEvent({ name: 'event_name', data: {} });",
+        "await linkrunner.trackEvent('event_name', { plan: 'gold', amount: 499 });",
+      expo: "await linkrunner.trackEvent('event_name', { plan: 'gold', amount: 499 });",
       capacitor:
-        "await linkrunner.trackEvent({ name: 'event_name', data: {} });",
-      android: 'LinkRunner.getInstance().trackEvent("event_name", data)',
-      ios: 'try await LinkrunnerSDK.shared.trackEvent(name: "event_name", data: [:])',
-      web: "LinkrunnerSDK.trackEvent({ name: 'event_name', data: {} });",
+        "await linkrunner.trackEvent('event_name', { plan: 'gold', amount: 499 });",
+      android:
+        'LinkRunner.getInstance().trackEvent(eventName = "event_name", eventData = mapOf("plan" to "gold", "amount" to 499))',
+      ios: 'await LinkrunnerSDK.shared.trackEvent(eventName: "event_name", eventData: ["plan": "gold", "amount": 499])',
+      web: "lr.track('event_name', { plan: 'gold', amount: 499 });",
     },
   },
   {
@@ -283,19 +292,23 @@ const FEATURES: FeatureDef[] = [
         /LinkRunner\.capturePayment\s*\(/,
       ],
       ios: [/LinkrunnerSDK\.shared\.capturePayment\s*\(/],
-      web: [/LinkrunnerSDK\.capturePayment\s*\(/],
+      web: [
+        /LinkrunnerSDK\.capturePayment\s*\(/,
+        /\blr\.track\s*\(\s*['"`]purchase['"`]/,
+      ],
     },
     example: {
       flutter:
-        "await LinkRunner().capturePayment(amount: 9.99, currency: 'USD');",
+        "await LinkRunner().capturePayment(capturePayment: LRCapturePayment(amount: 9.99, userId: 'USER_ID', paymentId: 'PAYMENT_ID'));",
       "react-native":
-        "await linkrunner.capturePayment({ amount: 9.99, currency: 'USD' });",
-      expo: "await linkrunner.capturePayment({ amount: 9.99, currency: 'USD' });",
+        "await linkrunner.capturePayment({ amount: 9.99, userId: 'USER_ID', paymentId: 'PAYMENT_ID' });",
+      expo: "await linkrunner.capturePayment({ amount: 9.99, userId: 'USER_ID', paymentId: 'PAYMENT_ID' });",
       capacitor:
-        "await linkrunner.capturePayment({ amount: 9.99, currency: 'USD' });",
-      android: 'LinkRunner.getInstance().capturePayment(9.99, "USD")',
-      ios: 'try await LinkrunnerSDK.shared.capturePayment(amount: 9.99, currency: "USD")',
-      web: "LinkrunnerSDK.capturePayment({ amount: 9.99, currency: 'USD' });",
+        "await linkrunner.capturePayment({ amount: 9.99, userId: 'USER_ID', paymentId: 'PAYMENT_ID' });",
+      android:
+        'LinkRunner.getInstance().capturePayment(CapturePaymentRequest(paymentId = "PAYMENT_ID", userId = "USER_ID", amount = 9.99))',
+      ios: 'await LinkrunnerSDK.shared.capturePayment(amount: 9.99, userId: "USER_ID", paymentId: "PAYMENT_ID")',
+      web: "lr.track('purchase', { amount: 9.99, currency: 'USD' });",
     },
   },
   {
