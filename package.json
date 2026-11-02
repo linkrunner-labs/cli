@@ -16,13 +16,13 @@
     "dev:test": "bun run src/index.ts test",
     "dev:login": "bun run src/index.ts login",
     "link:local": "bun link",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "bun check --no-script",
     "lint": "oxlint src/",
     "lint:fix": "oxlint src/ --fix",
     "format": "prettier --write 'src/**/*.ts'",
     "test": "vitest run",
     "test:watch": "vitest",
-    "check": "tsc --noEmit && oxlint src/"
+    "check": "bun run typecheck && bun run lint"
   },
   "author": "Darshil Rathod <darshilrathod0@gmail.com>",
   "license": "MIT",
@@ -41,6 +41,7 @@
   "devDependencies": {
     "@types/node": "^22.10.0",
     "@types/plist": "^3.0.5",
+    "bun": "1.4.4",
     "bun-types": "^1.1.0",
     "oxlint": "^1.90.0",
     "prettier": "^3.8.1",
