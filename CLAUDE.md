@@ -14,7 +14,8 @@ bun install                 # Install dependencies
 bun run dev                 # Run CLI in dev mode (src/index.ts)
 bun run build               # Build JS bundle (dist/index.js)
 bun run build:binary:local  # Compile native binary for current platform
-bun run typecheck           # TypeScript type checking
+bun run typecheck           # Type check with bun check (TypeScript 7 rules)
+bun run check               # Type check + oxlint
 ```
 
 ## Architecture
